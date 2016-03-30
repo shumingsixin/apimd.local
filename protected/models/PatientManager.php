@@ -30,9 +30,12 @@ class PatientManager {
     }
 
     //查询该创建者所有预约患者的总数
-    public function loadPatientBookingNumberByCreatorId($creator_id) {
+    public function loadPatientBookingNumberByCreatorId($creator_id,$stuats) {
         $criteria = new CDbCriteria();
         $criteria->compare('t.creator_id', $creator_id);
+        if($stuats>'0'){
+            $criteria->compare('t.status', $stuats);
+        }
         $criteria->addCondition('t.date_deleted is NULL');
         return PatientBooking::model()->count($criteria);
     }
@@ -109,11 +112,11 @@ class PatientManager {
     }
 
     //查询创建者预约列表
-    public function loadAllPatientBookingByCreatorId($creatorId, $attributes = null, $with = null, $options = null) {
+    public function loadAllPatientBookingByCreatorId($creatorId, $status, $attributes = null, $with = null, $options = null) {
         if (is_null($attributes)) {
             $attributes = '*';
         }
-        return PatientBooking::model()->getAllByCreatorId($creatorId, $attributes, $with, $options);
+        return PatientBooking::model()->getAllByCreatorId($creatorId, $status, $attributes, $with, $options);
     }
 
     //查询创建者的预约详情
@@ -148,7 +151,16 @@ class PatientManager {
         }
         return PatientInfo::model()->getByIdAndCreatorId($id, $creatorId, $attributes, $with, $options);
     }
-
+    
+    /**
+     * 根据patientId查询相关预约单患者详情
+     */
+    public function loadPatientInfoByPatientId($patientId, $attributes){
+        if (is_null($attributes)) {
+            $attributes = '*';
+        }
+        return PatientInfo::model()->getById($patientId, $attributes, $with, $options);
+    }
     /**
      * Get EUploadedFile from $_FILE. 
      * Create DoctorCert model. 

@@ -79,8 +79,12 @@ class ApimdController extends Controller {
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
-                $apisvc = new ApiViewSendPatientBookingList($userId);
+                $status = $values['status'];
+                //$userId='100370';
+                //$status=0;
+                $apisvc = new ApiViewSendPatientBookingList($userId,$status);
                 $output = $apisvc->loadApiViewData();
+                //print_r($output);exit;
                 break;
             case 'receivebooking'://收到的预约
                 $values = $_GET;

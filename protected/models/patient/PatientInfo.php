@@ -157,6 +157,14 @@ class PatientInfo extends EActiveRecord {
     public function getAllByCreateorId($creatorId, $attributes = '*', $with = null, $options = null) {
         return $this->getAllByAttributes(array('t.creator_id' => $creatorId), $with, $options);
     }
+    
+    /**
+     * 根据ID获得患者详情
+     * @see EActiveRecord::getById()
+     */
+    public function getInfoById($id){
+        return $this->getByAttributes(array('id' => $id), $with, $options);
+    }
 
     /*     * ****** Accessors ******* */
 

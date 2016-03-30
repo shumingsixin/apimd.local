@@ -6,15 +6,17 @@
 class ApiViewSendPatientBookingList extends EApiViewService {
 
     private $creatorId;  // User.id
+    private $status;     //发出的预约单状态
     private $patientMgr;
     private $patientBookings;  // array
     private $pagesize = 10;
     private $page = 1;
 
     //初始化类的时候将参数注入
-    public function __construct($creatorId, $pagesize = 100, $page = 1) {
+    public function __construct($creatorId, $status, $pagesize = 100, $page = 1) {
         parent::__construct();
         $this->creatorId = $creatorId;
+        $this->status = $status;
         $this->pagesize = $pagesize;
         $this->page = $page;
         $this->patientMgr = new PatientManager();
@@ -44,14 +46,14 @@ class ApiViewSendPatientBookingList extends EApiViewService {
         $attributes = null;
         $with = array('pbPatient');
         $options = array('limit' => $this->pagesize, 'offset' => (($this->page - 1) * $this->pagesize), 'order' => 't.date_updated DESC');
-        $models = $this->patientMgr->loadAllPatientBookingByCreatorId($this->creatorId, $attributes, $with, $options);
+        $models = $this->patientMgr->loadAllPatientBookingByCreatorId($this->creatorId, $this->status, $attributes, $with, $options);
         if (arrayNotEmpty($models)) {
             $this->setPatientBookings($models);
         }
     }
 
     public function loadCount() {
-        return $this->patientMgr->loadPatientBookingNumberByCreatorId($this->creatorId);
+        return $this->patientMgr->loadPatientBookingNumberByCreatorId($this->creatorId, $this->status);
     }
 
     //查询到的数据过滤
