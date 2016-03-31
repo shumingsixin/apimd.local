@@ -43,13 +43,13 @@ class ApimdController extends Controller {
                         'status' => EApiViewService::RESPONSE_OK,
                         'errorCode' => ErrorList::ERROR_NONE,
                         'errorMsg' => 'success',
-                        'results'=>array(
+                        'results' => array(
                             'version' => '20151221',
                             'localdataUrl' => Yii::app()->createAbsoluteUrl('/apimd/localdata'),
                         )
                     );
-                }else{
-                    $output = array('status' => EApiViewService::RESPONSE_OK, 'errorCode' => ErrorList::ERROR_NONE, 'errorMsg' => 'success', 'results'=>'20151124');
+                } else {
+                    $output = array('status' => EApiViewService::RESPONSE_OK, 'errorCode' => ErrorList::ERROR_NONE, 'errorMsg' => 'success', 'results' => '20151124');
                 }
                 break;
             case 'city'://城市列表
@@ -59,7 +59,7 @@ class ApimdController extends Controller {
             case 'localdata'://本地需要缓存的数据
                 if ($api >= 2) {
                     $apiService = new ApiViewLocalDataV2();
-                }else{
+                } else {
                     $apiService = new ApiViewLocalData();
                 }
                 $output = $apiService->loadApiViewData();
@@ -70,7 +70,7 @@ class ApimdController extends Controller {
                 $userId = $user->getId();
                 if ($api >= 2) {
                     $apiService = new ApiViewPatientListV2($userId);
-                }else{
+                } else {
                     $apiService = new ApiViewPatientList($userId);
                 }
                 $output = $apiService->loadApiViewData();
@@ -82,7 +82,7 @@ class ApimdController extends Controller {
                 $status = $values['status'];
                 //$userId='100370';
                 //$status=0;
-                $apisvc = new ApiViewSendPatientBookingList($userId,$status);
+                $apisvc = new ApiViewSendPatientBookingList($userId, $status);
                 $output = $apisvc->loadApiViewData();
                 //print_r($output);exit;
                 break;
@@ -111,15 +111,15 @@ class ApimdController extends Controller {
                 $appMgr = new AppManager();
                 $output = $appMgr->loadAppVersionJson($get);
                 break;
-            
+
             case 'patientbookinginfo'://已发出预约详情
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
-                $patientId=$value['id'];
-                $creatorId=$user->getId();
+                $patientId = $value['id'];
+                $creatorId = $user->getId();
                 //$creatorId='100370';
                 //$patientId='62';
-                $apiService = new ApiViewPatientInfo($patientId,$creatorId);
+                $apiService = new ApiViewPatientInfo($patientId, $creatorId);
                 $output = $apiService->loadApiViewData();
                 break;
 
@@ -127,15 +127,15 @@ class ApimdController extends Controller {
                 $apiService = new ApiViewDiseaseCategory();
                 $output = $apiService->loadApiViewData();
                 break;
-                
+
             case 'contractdoctor'://签约医生
                 $values = $_GET;
-                if(count($values)>1){
+                if (count($values) > 1) {
                     $apiService = new ApiViewDoctorSearch($values);
                     $output = $apiService->loadApiViewData();
                 }
                 break;
-                
+
             default:
                 // Model not implemented error
                 //$this->_sendResponse(501, sprintf('Error: Mode <b>list</b> is not implemented for model <b>%s</b>', $model));
@@ -209,10 +209,10 @@ class ApimdController extends Controller {
 
     public function actionCreate($model) {
         $get = $_GET;
-        if(empty($_POST)){
+        if (empty($_POST)) {
             // application/json
             $post = CJSON::decode($this->getPostData());
-        }else{
+        } else {
             // application/x-www-form-urlencoded
             $post = $_POST;
         }
@@ -243,6 +243,28 @@ class ApimdController extends Controller {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
+            case 'userpawlogin'://手机号密码登录
+                if (isset($post['userpawLogin'])) {
+                    // get user ip from request.
+                    $values = $post['userpawLogin'];
+                    $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                    $authMgr = new AuthManager();
+                    $output = $authMgr->apiTokenDoctorLoginByPaw($values);
+                    $output['loginType'] = 'sms';
+                } else {
+                    $output['errorMsg'] = 'Wrong parameters.';
+                }
+                break;
+            case 'userregister':
+                if (isset($post['register'])) {
+                    $values = $post['register'];
+                    $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                    $userMgr = new UserManager();
+                    $output = $userMgr->apiTokenDoctorRegister($values);
+                } else {
+                    $output['errorMsg'] = 'Wrong parameters.';
+                }
+                break;
             case 'patient'://创建患者（患者基本信息）
                 if (isset($post['patient'])) {
                     $values = $post['patient'];
@@ -250,7 +272,6 @@ class ApimdController extends Controller {
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientInfo($user, $values);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
@@ -287,7 +308,6 @@ class ApimdController extends Controller {
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateProfile($user, $values);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
@@ -328,12 +348,11 @@ class ApimdController extends Controller {
             $this->renderJsonOutput(array('status' => EApiViewService::RESPONSE_NO, 'errorCode' => ErrorList::BAD_REQUEST, 'errorMsg' => 'Error: Parameter <b>id</b> is missing'));
         }
         $get = $_GET;
-        if(empty($_POST)){
+        if (empty($_POST)) {
 
             // application/json
             $post = CJSON::decode($this->getPostData());
-
-        }else{
+        } else {
             // application/x-www-form-urlencoded
             $post = $_POST;
         }
@@ -350,7 +369,6 @@ class ApimdController extends Controller {
 
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientInfo($user, $values, $id);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
@@ -362,7 +380,6 @@ class ApimdController extends Controller {
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateProfile($user, $values, $id);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
@@ -389,7 +406,6 @@ class ApimdController extends Controller {
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiDelectDoctorCertByIdAndUserId($user, $id);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
@@ -404,7 +420,6 @@ class ApimdController extends Controller {
 
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiDelectPatientFileByIdAndUserId($user, $id);
-
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
