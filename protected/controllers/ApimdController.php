@@ -111,7 +111,31 @@ class ApimdController extends Controller {
                 $appMgr = new AppManager();
                 $output = $appMgr->loadAppVersionJson($get);
                 break;
+            
+            case 'patientbookinginfo'://已发出预约详情
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
+                $patientId=$value['id'];
+                $creatorId=$user->getId();
+                //$creatorId='100370';
+                //$patientId='62';
+                $apiService = new ApiViewPatientInfo($patientId,$creatorId);
+                $output = $apiService->loadApiViewData();
+                break;
 
+            case 'diseasecategory'://科室分类
+                $apiService = new ApiViewDiseaseCategory();
+                $output = $apiService->loadApiViewData();
+                break;
+                
+            case 'contractdoctor'://签约医生
+                $values = $_GET;
+                if(count($values)>1){
+                    $apiService = new ApiViewDoctorSearch($values);
+                    $output = $apiService->loadApiViewData();
+                }
+                break;
+                
             default:
                 // Model not implemented error
                 //$this->_sendResponse(501, sprintf('Error: Mode <b>list</b> is not implemented for model <b>%s</b>', $model));
