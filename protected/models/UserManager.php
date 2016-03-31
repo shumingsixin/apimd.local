@@ -271,7 +271,7 @@ class UserManager {
         $output = array('status' => false); // default status is false.
         // TODO: wrap the following method. first, validates the parameters in $values.        
         if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
-            $output['errorCode'] = ErrorList::BAND_REQUEST;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = 'Wrong parameters.';
             return $output;
         }
@@ -289,13 +289,13 @@ class UserManager {
         $authMgr = new AuthManager();
         $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
         if ($authSmsVerify->isValid() === false) {
-            $output['errorCode'] = ErrorList::BAND_REQUEST;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = $authSmsVerify->getError('code');
             return $output;
         }
         // Check if username exists.
         if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
-            $output['errorCode'] = ErrorList::BAND_REQUEST;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = '该手机号已被注册';
             return $output;
         }
@@ -304,13 +304,13 @@ class UserManager {
         // Creates a new User model.
         $user = $this->doRegisterDoctor($mobile, $password);
         if ($user->hasErrors()) {
-            $output['errorCode'] = ErrorList::BAND_REQUEST;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = $user->getFirstErrors();
             return $output;
         } else if ($autoLogin) {
-            $output['errorCode'] = ErrorList::BAND_REQUEST;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
             // auto login user and return token.            
-            $output = $authMgr->doTokenUserLoginByPassword($mobile, $password, $userHostIp);
+            $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
         } else {
             $output['status'] = true;
         }
