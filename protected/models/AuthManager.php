@@ -161,19 +161,29 @@ class AuthManager {
         }
 
         if (!User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
-            $userMR = new UserManager();
-            $password = md5(time());
-            $user = $userMR->doRegisterDoctor($mobile, $password);
-            if ($user->hasErrors()) {
-                // error, so return errors.
-                $output['status'] = EApiViewService::RESPONSE_NO;
-                $output['errorCode'] = ErrorList::BAD_REQUEST;
-                $output['errorMsg'] = $user->getFirstErrors();
-                return $output;
-            }
+            // error, so return errors.
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = '该用户不存在!';
+            return $output;
         }
         // auto login user and return token.
         return $this->apiTokenDoctorAutoLoginByMobile($mobile);
+    }
+
+    //用户密码登陆
+    public function apiTokenDoctorLoginByPaw($values) {
+        $mobile = $values['username'];
+        $password = $values['password'];
+
+        if (!User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
+            // error, so return errors.
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = '该用户不存在!';
+            return $output;
+        }
+        return $this->apiTokenDoctorAutoLoginByPaw($mobile, $password);
     }
 
     public function apiTokenDoctorAutoLoginByMobile($mobile) {
@@ -196,7 +206,39 @@ class AuthManager {
             $output['status'] = EApiViewService::RESPONSE_OK;
             $output['errorCode'] = ErrorList::ERROR_NONE;
             $output['errorMsg'] = 'success';
-            $output['results'] = array('token' => $authTokenUser->getToken(), 'uid' => $user->getUid(), 'isProfile'=>is_object(UserDoctorProfile::model()->getByUserId($user->getId())) ? 1 : 0);
+            $output['results'] = array('token' => $authTokenUser->getToken(), 'uid' => $user->getUid(), 'isProfile' => is_object(UserDoctorProfile::model()->getByUserId($user->getId())) ? 1 : 0);
+        }
+        return $output;
+    }
+
+    public function apiTokenDoctorAutoLoginByPaw($mobile, $password) {
+        // get user by $mobile from db.
+        $user = User::model()->getByUsernameAndRole($mobile, StatCode::USER_ROLE_DOCTOR);
+        if (is_null($user)) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = '该用户不存在';
+            return $output;
+        } else {
+            if ($user->password != $user->encryptPassword($password)) {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::BAD_REQUEST;
+                $output['errorMsg'] = '用户名或密码错误!';
+                return $output;
+            }
+        }
+        // do auto doctor user.
+        $authTokenUser = $this->doTokenDoctorAutoLogin($user);
+        if ($authTokenUser->hasErrors()) {
+            $errors = $authTokenUser->getFirstErrors();
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = array_shift($errors);
+        } else {
+            $output['status'] = EApiViewService::RESPONSE_OK;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = 'success';
+            $output['results'] = array('token' => $authTokenUser->getToken(), 'uid' => $user->getUid(), 'isProfile' => is_object(UserDoctorProfile::model()->getByUserId($user->getId())) ? 1 : 0);
         }
         return $output;
     }
@@ -341,13 +383,39 @@ class AuthManager {
                 $output['token'] = $tokenUser->getToken();
                 // TODO: log.
             } else {
-                $output['errors']['error_code'] = ErrorList::ERROR_TOKEN_CREATE_FAILED;
-                $output['errors']['error_msg'] = '生成token失败!';
+                $output['errorCode'] = ErrorList::ERROR_TOKEN_CREATE_FAILED;
+                $output['errorMsg'] = '生成token失败!';
                 // TODO: log.
             }
         } else {
-            $output['errors']['error_code'] = $authUserIdentity->errorCode;
-            $output['errors']['error_msg'] = '用户名或密码不正确';
+            $output['errorCode'] = $authUserIdentity->errorCode;
+            $output['errorMsg'] = '用户名或密码不正确';
+        }
+        return $output;
+    }
+
+    public function doTokenDoctorLoginByPassword($username, $password, $userHostIp = null) {
+        $output = array('status' => false); // default status is false.
+        $authUserIdentity = $this->authenticateUserByPassword($username, $password);
+        if ($authUserIdentity->isAuthenticated) {
+            // username and password are correct. continue to create AuthTokenUser.
+            $user = $authUserIdentity->getUser();
+            $userMacAddress = null;
+            $deActivateFlag = true;
+            //$tokenUser = $this->createTokenUser($user->getId(), $userHostIp, $userMacAddress, $deActivateFlag);
+            $tokenUser = $this->createTokenDoctor($user->getId(), $username, $userHostIp, $userMacAddress, $deActivateFlag);  //@2015-10-28 by Hou Zhen Chuan
+            if (isset($tokenUser)) {
+                $output['status'] = true;
+                $output['token'] = $tokenUser->getToken();
+                // TODO: log.
+            } else {
+                $output['errorCode'] = ErrorList::ERROR_TOKEN_CREATE_FAILED;
+                $output['errorMsg'] = '生成token失败!';
+                // TODO: log.
+            }
+        } else {
+            $output['errorCode'] = $authUserIdentity->errorCode;
+            $output['errorMsg'] = '用户名或密码不正确';
         }
         return $output;
     }

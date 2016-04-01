@@ -266,6 +266,62 @@ class UserManager {
         return $output;
     }
 
+    //医生注册
+    public function apiTokenDoctorRegister($values) {
+        $output = array('status' => false); // default status is false.
+        // TODO: wrap the following method. first, validates the parameters in $values.        
+        if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = 'Wrong parameters.';
+            return $output;
+        }
+        // assign parameters.
+        $mobile = $values['username'];
+        $password = $values['password'];
+        $verifyCode = $values['verify_code'];
+        $userHostIp = isset($values['userHostIp']) ? $values['userHostIp'] : null;
+        $autoLogin = false;
+        if (isset($values['autoLogin']) && $values['autoLogin'] == 1) {
+            $autoLogin = true;
+        }
+
+        // Verifies AuthSmsVerify by using $mobile & $verifyCode.     手机验证码验证    
+        $authMgr = new AuthManager();
+        $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
+        if ($authSmsVerify->isValid() === false) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $authSmsVerify->getError('code');
+            return $output;
+        }
+        // Check if username exists.
+        if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = '该手机号已被注册';
+            return $output;
+        }
+
+        // success.
+        // Creates a new User model.
+        $user = $this->doRegisterDoctor($mobile, $password);
+        if ($user->hasErrors()) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $user->getFirstErrors();
+            return $output;
+        } else if ($autoLogin) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            // auto login user and return token.            
+            $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
+        } else {
+            $output['status'] = true;
+        }
+        // deactive current smsverify.                
+        if (isset($authSmsVerify)) {
+            $authMgr->deActiveAuthSmsVerify($authSmsVerify);
+        }
+
+        return $output;
+    }
+
     /**
      * 
      * @param type $username
