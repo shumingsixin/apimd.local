@@ -297,7 +297,6 @@ class PatientManager {
         }
         $patientId = $values['patient_id'];
         $userId = $user->getId();
-
         // TODO: load $patient from db by $patientId.
         $patient = PatientInfo::model()->getByIdAndCreatorId($patientId, $userId);
         if (is_null($patient)) {
@@ -320,14 +319,23 @@ class PatientManager {
             $patientName = null;
         }
         $model->patient_name = $patientName;
-
+        $model->detail=$values['detail'];
+        $doctor = Doctor::model()->getById($values['doctor_id']);
+        if(is_null($doctor)){
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::UNAUTHORIZED;
+            $output['errorMsg'] = '未找到该医生';
+            return $output;
+        }
+        else{
+            $expected_doctor=$doctor->name."&nbsp;".$doctor->hospital_name."&nbsp;".$doctor->hp_dept_name;
+        }
+        $model->expected_doctor=$expected_doctor;
         if ($model->save()) {
-
             $apiRequest = new ApiRequestUrl();
             $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
 //            $remote_url = 'http://192.168.31.119/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
             $ret = $this->send_get($remote_url);
-
             if ($ret['status'] == 'no') {
                 $output['status'] = 'no';
                 $output['errorCode'] = 400;
@@ -346,7 +354,6 @@ class PatientManager {
                 );
 
             }
-
             //自动生成一张adminbooking
 //            $bookingMgr = new BookingManager();
 //            $adminBooking = $bookingMgr->createAdminBooking($model);
@@ -377,7 +384,6 @@ class PatientManager {
             $output['errorCode'] = ErrorList::UNAUTHORIZED;
             $output['errorMsg'] = $model->getErrors();
         }
-
         return $output;
     }
 

@@ -15,6 +15,7 @@
  * @property integer $travel_type
  * @property string $date_start
  * @property string $date_end
+ * @property string $expected_doctor
  * @property string $detail
  * @property integer is_deposit_paid
  * @property string $appt_date
@@ -55,16 +56,17 @@ class PatientBooking extends EActiveRecord {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('patient_id, creator_id, status, travel_type, date_start, date_end', 'required'),
+            array('patient_id, creator_id, status, travel_type, date_start, date_end,expected_doctor', 'required'),
             array('patient_id, creator_id, doctor_id, status, travel_type', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('user_agent, doctor_name, patient_name, creator_name', 'length', 'max' => 20),
             array('detail', 'length', 'max' => 1000),
             array('remark', 'length', 'max' => 500),
+            array('expected_doctor', 'length', 'max' => 200),
             array('appt_date, date_confirm, date_created, date_updated, date_deleted', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
-            array('id, ref_no, patient_id, patient_name, doctor_id, doctor_name, creator_id, creator_name, status, travel_type, date_start, date_end, detail, appt_date, date_confirm, remark, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
+            array('id, ref_no, patient_id, patient_name, doctor_id, doctor_name, creator_id, creator_name, status, travel_type, date_start, date_end, expected_doctor, detail, appt_date, date_confirm, remark, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
         );
     }
 
@@ -99,6 +101,7 @@ class PatientBooking extends EActiveRecord {
             'travel_type' => '出行方式',
             'date_start' => '开始日期',
             'date_end' => '结束日期',
+            'expected_doctor' => '期望专家',
             'detail' => '细节',
             'is_deposit_paid' => '是否支付定金',
             'appt_date' => '最终预约日期',
@@ -139,6 +142,7 @@ class PatientBooking extends EActiveRecord {
         $criteria->compare('travel_type', $this->travel_type);
         $criteria->compare('date_start', $this->date_start, true);
         $criteria->compare('date_end', $this->date_end, true);
+        $criteria->compare('expected_doctor', $this->expected_doctor, true);
         $criteria->compare('detail', $this->detail, true);
         $criteria->compare('appt_date', $this->appt_date, true);
         $criteria->compare('date_confirm', $this->date_confirm, true);
@@ -241,7 +245,11 @@ class PatientBooking extends EActiveRecord {
     public function getPatientName() {
         return $this->patient_name;
     }
-
+    
+    public function getExpectedDoctor() {
+        return $this->expected_doctor;
+    }
+    
     public function getDoctorName() {
         return $this->doctor_name;
     }

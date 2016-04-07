@@ -593,5 +593,88 @@ class DoctorManager {
         }
         return $output;
     }
-
+   
+    /**
+     * api 修改密码
+     */
+    public function apiChangePassword($values,$id){
+        $model = User::model()->getByUserId($id);
+        if (isset($id)) {
+            if (is_null($model)) {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                $output['errorMsg'] = '您没有权限执行此操作';
+                return $output;
+            }
+        }
+        if($values['changepassword']['newPass']!=$values['changepassword']['dPass']){
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = '两次密码输入不符';
+            return $output;
+        }
+        elseif($model->password != User::model()->encryptPassword($values['changepassword']['oldPass']))
+        {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = '旧密码输入错误';
+            return $output;
+        }
+        else{
+            $postOldMd5Pass=User::model()->encryptPassword($values['changepassword']['oldPass']);
+            $postNewPass=User::model()->encryptPassword($values['changepassword']['newPass']);
+            $oldMd5Pass=$model->password_raw;
+            $model->setAttributes($values);
+            // user_id.
+            $model_res = $model->find('id=:id and  password=:password',array(":id"=>$id,":password"=>$postOldMd5Pass));
+            $model_res = $model->password_raw = $values['changepassword']['newPass'];
+            $model_res = $model->password = $postNewPass;
+            if ($model_res=$model->save()) {
+                $output['status'] = EApiViewService::RESPONSE_OK;
+                $output['errorCode'] = ErrorList::ERROR_NONE;
+                $output['errorMsg'] = 'success';
+                $output['results'] = array(
+                    'id' => $model->getId(),
+                );
+            } else {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::BAD_REQUEST;
+                $output['errorMsg'] = $model->getFirstErrors();
+            }
+            return $output;
+        }      
+    }
+    
+    /**
+     * api 忘记密码
+     */
+    public function apiForgetPassword($mobile,$smsCode,$newPass,$userId,$userIp){
+        $authM=new AuthManager();
+        $authSmsVerify=$authM->verifyCodeForPasswordReset($mobile, $smsCode,$userIp);
+        if ($authSmsVerify->isValid() === false) {
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $authSmsVerify->getError('code');
+            return $output;
+        }
+        else{
+            $model = User::model()->getByUsername($mobile);
+            $newEncryptPass=$model->encryptPassword($newPass);
+            $model->find('id=:id and  username=:username',array(":id"=>$userId,":username"=>$mobile));
+            $model->password_raw = $newPass;
+            $model->password = $newEncryptPass;
+            if ($model->save()) {
+                $output['status'] = EApiViewService::RESPONSE_OK;
+                $output['errorCode'] = ErrorList::ERROR_NONE;
+                $output['errorMsg'] = 'success';
+                $output['results'] = array(
+                    'id' => $model->getId(),
+                );
+            } else {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::BAD_REQUEST;
+                $output['errorMsg'] = $model->getFirstErrors();
+            }
+            return $output;
+        }
+    }
 }

@@ -168,7 +168,16 @@ class User extends EActiveRecord {
     public function getByUsernameAndRole($username, $role) {
         return $this->getByAttributes(array('username' => $username, 'role' => $role));
     }
-
+    
+    /**
+     * 根据ID获得用户信息
+     * @param unknown $username
+     * @return type
+     */
+    public function getByUserId($id) {
+        return $this->getByAttributes(array('id' => $id));
+    }
+    
     /*     * ****** Public Methods ****** */
 
     public function createNewModel() {

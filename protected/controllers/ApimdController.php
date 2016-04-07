@@ -193,7 +193,14 @@ class ApimdController extends Controller {
                 $apisvc = new ApiViewFilesOfPatient($id, $creatorId, $values);
                 $output = $apisvc->loadApiViewData();
                 break;
-
+            
+            case 'doctorinfo'://医生信息
+                $values = $_GET;
+                //$user = $this->userLoginRequired($values);
+                $doctorId = $values['id'];
+                $apisvc = new ApiViewDoctor($doctorId);
+                $output = $apisvc->loadApiViewData();
+                break;
             default:
                 $this->_sendResponse(501, sprintf('Mode <b>view</b> is not implemented for model <b>%s</b>', $model));
                 Yii::app()->end();
@@ -279,7 +286,6 @@ class ApimdController extends Controller {
                 if (isset($post['patientFile'])) {
                     $values = $post['patientFile'];
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
-
                     $user = $this->userLoginRequired($values);
                     $file = EUploadedFile::getInstanceByName('patientFile[file_data]');  // This supports uploading of ONE file only!
                     $patientMgr = new PatientManager();
@@ -291,6 +297,7 @@ class ApimdController extends Controller {
             case 'patientbooking'://创建患者预约
                 if (isset($post['patientbooking'])) {
                     $values = $post['patientbooking'];
+                    //$values=array("patient_id"=>"62","doctor_id"=>"1","travel_type"=>"1","detail"=>"testtesttest");
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $values['user_agent'] = ($this->isUserAgentIOS()) ? StatCode::USER_AGENT_APP_IOS : StatCode::USER_AGENT_APP_ANDROID;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
@@ -327,7 +334,6 @@ class ApimdController extends Controller {
                 if (isset($post['applycontract'])) {
                     $values = $post['applycontract'];
                     $user = $this->userLoginRequired($values);
-
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateApplyContract($user, $values);
                 } else {
@@ -337,14 +343,29 @@ class ApimdController extends Controller {
             case 'changepassword'://修改密码
                 if(isset($post['changepassword'])){
                     $values=$post['changepassword'];
-                    $values=array('changepassword' => array('oldPass' => '223444','newPass' => '334455', 'dPass' => '334455'));
+                    $values=array('changepassword' => array('oldPass' => '334455','newPass' => '556677', 'dPass' => '556677'));
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
-                    //$user = $this->userLoginRequired($values);  // check if doctor has login.
+                    $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $userId='100370';
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiChangePassword($values,$userId);
                 }
                 break;
+            case 'forgetpassword'://忘记密码
+                if(isset($post['forgetpassword'])){
+                    //$values=$post['forgetpassword'];
+                    $values=array('forgetpassword' => array('username' => '13816439927','newPass' => '556677', 'smscode' => '758941'));
+                    $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                    $user = $this->userLoginRequired($values);  // check if doctor has login.
+                    $userId='100400';
+                    $doctorMgr = new DoctorManager();
+                    $mobile=$values['forgetpassword']['username'];
+                    $smsCode=$values['forgetpassword']['smscode'];
+                    $newPass=$values['forgetpassword']['newPass'];
+                    $output = $doctorMgr->apiForgetPassword($mobile,$smsCode,$newPass,$userId,$values['userHostIp']);
+                }
+                break;
+                
             default:
                 $this->_sendResponse(501, sprintf('Error: Invalid request', $model));
                 Yii::app()->end();
