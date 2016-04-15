@@ -135,7 +135,23 @@ class ApimdController extends Controller {
                     $output = $apiService->loadApiViewData();
                 }
                 break;
-
+            
+            case 'orderpayment'://预约单支付列表
+                $values = $_GET;
+                if (count($values) > 1) {
+                    $apiService = new ApiViewOrderPayment($values);
+                    $output = $apiService->loadApiViewData();
+                }
+                break;
+            case 'searchpatient'://搜索患者
+                $values = $_GET;
+                if (count($values) > 1) {
+                    $userId = $this->getCurrentUserId();
+                    $name = $values['name'];
+                    $apiService = new ApiViewPatientSearch($userId, $name);
+                    $output = $apiService->loadApiViewData();
+                }
+                break;
             default:
                 // Model not implemented error
                 //$this->_sendResponse(501, sprintf('Error: Mode <b>list</b> is not implemented for model <b>%s</b>', $model));
