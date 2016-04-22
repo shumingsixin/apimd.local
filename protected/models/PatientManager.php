@@ -220,8 +220,8 @@ class PatientManager {
             $output['errorCode'] = ErrorList::ERROR_NONE;
             $output['errorMsg'] = 'success';
             $output['results'] = array(
-                'id' => $model->getId(),
-                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/patientfile'),
+                /* 'id' => $model->getId(),
+                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/patientfile'), */
             );
         } else {
             $output['status'] = EApiViewService::RESPONSE_NO;

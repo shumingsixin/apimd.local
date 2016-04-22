@@ -48,7 +48,7 @@ class ApiViewDoctor extends EApiViewService {
         $data->careerExp = $model->getCareerExp();
         $data->honour = $model->getHonourList();
         $data->reasons = $model->getReasons();
-        $this->results->doctor = $data;
+        $this->results = $data;
     }
 
 }

@@ -115,7 +115,7 @@ class ApimdController extends Controller {
             case 'patientbookinginfo'://已发出预约详情
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
-                $patientId = $value['id'];
+                $patientId = $values['id'];
                 $creatorId = $user->getId();
                 //$creatorId='100370';
                 //$patientId='62';
@@ -130,10 +130,11 @@ class ApimdController extends Controller {
 
             case 'contractdoctor'://签约医生
                 $values = $_GET;
-                if (count($values) > 1) {
+                //if (count($values) > 1) {
                     $apiService = new ApiViewDoctorSearch($values);
                     $output = $apiService->loadApiViewData();
-                }
+                    //print_r(json_decode(json_encode($output),true));
+                //}
                 break;
             
             case 'orderpayment'://预约单支付列表
@@ -151,6 +152,22 @@ class ApimdController extends Controller {
                     $apiService = new ApiViewPatientSearch($userId, $name);
                     $output = $apiService->loadApiViewData();
                 }
+                break;
+            case 'specialtopic'://发现
+                //$userId = $this->getCurrentUserId();
+                $apiService = new ApiViewSpecailTopic();
+                $output = $apiService->loadApiViewData();
+                break;
+            /* case 'indexbanner'://首页轮播图
+                //$userId = $this->getCurrentUserId();
+                $apiService = new ApiViewSpecailTopic();
+                $output = $apiService->loadApiViewData();
+                break; */
+            case 'indexannouncement'://首页公告
+                //$userId = $this->getCurrentUserId();
+                $apiService = new ApiViewIndex();
+                $output = $apiService->loadApiViewData();
+                //print_r(json_decode(json_encode($output,true)));exit;
                 break;
             default:
                 // Model not implemented error

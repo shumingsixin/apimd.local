@@ -67,7 +67,7 @@ class Doctor extends EActiveRecord {
         return array(
             array('name, fullname, medical_title', 'required'),
             array('hospital_id, hp_dept_id, gender, role, display_order, state_id, city_id', 'numerical', 'integerOnly' => true),
-            array('name, fullname, hospital_name, hp_dept_name, faculty, medical_title, academic_title, password_raw, wechat, tel', 'length', 'max' => 45),
+            array('name, fullname, hospital_name,hp_dept_name, faculty, medical_title, academic_title, password_raw, wechat, tel', 'length', 'max' => 45),
             array('mobile', 'length', 'max' => 11),
             array('disease_specialty, surgery_specialty,specialty, avatar_url', 'length', 'max' => 200),
             array('description', 'length', 'max' => 500),
@@ -379,7 +379,7 @@ class Doctor extends EActiveRecord {
          *  
          */
     }
-
+    
     public function getOptionsMedicalTitle() {
         return array(
             self::M_TITLE_ZHUREN => '主任医师',
