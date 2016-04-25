@@ -68,19 +68,19 @@ class ApiViewIndex extends EApiViewService {
     private function setBanners() {
         $data = array(
             array(
-                'pageTitle' => '手术直通车',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/kataer',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/kataer/kataerwangzi.jpg',
+                'pageTitle' => '名医主刀大事记',
+                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/bigEvent',
+                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/bigEvent/banner.png',
             ),
             array(
-                'pageTitle' => '手术直通车',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/lujinsong',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/lujinsong/lujinsong.jpg',
+                'pageTitle' => '名医主刀入选50强榜单',
+                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/newList',
+                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/newList/banner.png',
             ),
             array(
-                'pageTitle' => '手术直通车',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/renshancheng',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/renshancheng/renshancheng.jpg',
+                'pageTitle' => '达芬奇机器人',
+                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/robot',
+                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/robot/banner.jpg',
             )
         );
     
