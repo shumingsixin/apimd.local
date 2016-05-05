@@ -214,7 +214,7 @@ class UserManager {
      * @return string
      */
     public function apiTokenUserRegister($values) {
-        $output = array('status' => false); // default status is false.
+        $output = array('status' => 'no'); // default status is false.
         // TODO: wrap the following method. first, validates the parameters in $values.        
         if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
             $output['errors']['error_code'] = ErrorList::BAND_REQUEST;
@@ -240,7 +240,7 @@ class UserManager {
         }
         // Check if username exists.
         if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_PATIENT))) {
-            $output['status'] = false;
+            $output['status'] = 'no';
             $output['errors']['username'] = '该手机号已被注册';
             return $output;
         }
@@ -256,7 +256,7 @@ class UserManager {
             // auto login user and return token.            
             $output = $authMgr->doTokenUserLoginByPassword($mobile, $password, $userHostIp);
         } else {
-            $output['status'] = true;
+            $output['status'] = 'ok';
         }
         // deactive current smsverify.                
         if (isset($authSmsVerify)) {
@@ -268,7 +268,7 @@ class UserManager {
 
     //医生注册
     public function apiTokenDoctorRegister($values) {
-        $output = array('status' => false); // default status is false.
+        $output = array('status' => 'no'); // default status is false.
         // TODO: wrap the following method. first, validates the parameters in $values.        
         if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
             $output['errorCode'] = ErrorList::NOT_FOUND;
@@ -312,7 +312,7 @@ class UserManager {
             // auto login user and return token.            
             $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
         } else {
-            $output['status'] = true;
+            $output['status'] = 'ok';
         }
         // deactive current smsverify.                
         if (isset($authSmsVerify)) {
