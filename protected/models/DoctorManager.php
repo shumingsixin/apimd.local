@@ -490,7 +490,7 @@ class DoctorManager {
         }
         //自动生成一张Task
         $taskMgr = new TaskManager();
-        $model = UserDoctorProfile::model()->getByAttributes(array('user_id'=>$user->getId()));
+        $model = UserDoctorProfile::model()->getByAttributes(array('user_id' => $user->getId()));
         $task = $taskMgr->createTaskDoctor($model);
         if ($task == false) {
             $output['status'] = EApiViewService::RESPONSE_NO;
@@ -593,11 +593,11 @@ class DoctorManager {
         }
         return $output;
     }
-   
+
     /**
      * api 修改密码
      */
-    public function apiChangePassword($values,$id){
+    public function apiChangePassword($values, $id) {
         $model = User::model()->getByUserId($id);
         if (isset($id)) {
             if (is_null($model)) {
@@ -607,13 +607,13 @@ class DoctorManager {
                 return $output;
             }
         }
-        if($values['changepassword']['newPass']!=$values['changepassword']['dPass']){
+        if($values['changepassword']['newPassword']!=$values['changepassword']['dPassword']){
             $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::ERROR_NONE;
             $output['errorMsg'] = '两次密码输入不符';
             return $output;
         }
-        elseif($model->password != User::model()->encryptPassword($values['changepassword']['oldPass']))
+        elseif($model->password != User::model()->encryptPassword($values['changepassword']['oldPassword']))
         {
             $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::ERROR_NONE;
@@ -621,15 +621,15 @@ class DoctorManager {
             return $output;
         }
         else{
-            $postOldMd5Pass=User::model()->encryptPassword($values['changepassword']['oldPass']);
-            $postNewPass=User::model()->encryptPassword($values['changepassword']['newPass']);
+            $postOldMd5Pass=User::model()->encryptPassword($values['changepassword']['oldPassword']);
+            $postNewPass=User::model()->encryptPassword($values['changepassword']['newPassword']);
             $oldMd5Pass=$model->password_raw;
             $model->setAttributes($values);
             // user_id.
-            $model_res = $model->find('id=:id and  password=:password',array(":id"=>$id,":password"=>$postOldMd5Pass));
-            $model_res = $model->password_raw = $values['changepassword']['newPass'];
+            $model_res = $model->find('id=:id and  password=:password', array(":id" => $id, ":password" => $postOldMd5Pass));
+            $model_res = $model->password_raw = $values['changepassword']['newPassword'];
             $model_res = $model->password = $postNewPass;
-            if ($model_res=$model->save()) {
+            if ($model_res = $model->save()) {
                 $output['status'] = EApiViewService::RESPONSE_OK;
                 $output['errorCode'] = ErrorList::ERROR_NONE;
                 $output['errorMsg'] = 'success';
@@ -642,24 +642,25 @@ class DoctorManager {
                 $output['errorMsg'] = $model->getFirstErrors();
             }
             return $output;
-        }      
+        }
     }
-    
+
     /**
      * api 忘记密码
      */
-    public function apiForgetPassword($mobile,$smsCode,$newPass,$userId,$userIp){
+    public function apiForgetPassword($mobile,$smsCode,$newPass,$userIp){
         $authM=new AuthManager();
         $authSmsVerify=$authM->verifyCodeForPasswordReset($mobile, $smsCode,$userIp);
         if ($authSmsVerify->isValid() === false) {
-            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
             $output['errorMsg'] = $authSmsVerify->getError('code');
             return $output;
         }
         else{
             $model = User::model()->getByUsername($mobile);
             $newEncryptPass=$model->encryptPassword($newPass);
-            $model->find('id=:id and  username=:username',array(":id"=>$userId,":username"=>$mobile));
+            $model->find('username=:username',array(":username"=>$mobile));
             $model->password_raw = $newPass;
             $model->password = $newEncryptPass;
             if ($model->save()) {
@@ -677,4 +678,5 @@ class DoctorManager {
             return $output;
         }
     }
+
 }
