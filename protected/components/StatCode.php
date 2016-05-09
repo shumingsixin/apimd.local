@@ -17,10 +17,12 @@ class StatCode {
     const BK_TYPE_QUICKBOOK = 9;    // 快速预约
     const BK_TRAVELTYPE_PATIENT_GO = 1;    // 患者过去
     const BK_TRAVELTYPE_DOCTOR_COME = 2;   // 医生过来
-    const BK_STATUS_NEW = 1;         // 待处理
-    const BK_STATUS_PROCESSING = 2;   // 处理中
+    const BK_STATUS_NEW = 1;         // 待支付
+    const BK_STATUS_PROCESSING = 2;   // 安排中
     const BK_STATUS_CONFIRMED_DOCTOR = 3;   // 已确认专家
     const BK_STATUS_PATIENT_ACCEPTED = 4;   // 患者已接受
+    const BK_STATUS_SERVICE_UNPAID = 5;   //待确认
+    const BK_STATUS_SERVICE_PAIDED = 6;   // 上传出院小结
     const BK_STATUS_INVALID = 7;      // 失效的
     const BK_STATUS_DONE = 8;         // 已完成
     const BK_STATUS_CANCELLED = 9;   // 已取消
