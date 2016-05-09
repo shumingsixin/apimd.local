@@ -13,7 +13,7 @@ class ApiViewPatientListV2 extends EApiViewService {
     private $page = 1;
 
     //初始化类的时候将参数注入
-    public function __construct($creatorId, $pagesize = 10, $page = 1) {
+    public function __construct($creatorId,$hasBooking, $pagesize = 10, $page = 1) {
         parent::__construct();
         $this->creatorId = $creatorId;
         $this->pagesize = $pagesize;
@@ -21,6 +21,7 @@ class ApiViewPatientListV2 extends EApiViewService {
         $this->patientMgr = new PatientManager();
         $this->hasBookingList = array();
         $this->notBookingList = array();
+        $this->hasBooking=$hasBooking;
     }
 
     protected function loadData() {
@@ -46,6 +47,7 @@ class ApiViewPatientListV2 extends EApiViewService {
         $with = array('patientBookings');
         $options = array('limit' => $this->pagesize, 'offset' => (($this->page - 1) * $this->pagesize), 'order' => 't.date_updated DESC');
         $models = $this->patientMgr->loadPatientInfoListByCreateorId($this->creatorId, $attributes, $with, $options);
+        //print_r($models);exit;
         if (arrayNotEmpty($models)) {
             $this->setPatientList($models);
         }
@@ -62,6 +64,7 @@ class ApiViewPatientListV2 extends EApiViewService {
 
     //查询到的数据过滤
     private function setPatientList(array $models) {
+        //print_r($models);exit;
         foreach ($models as $model) {
             $data = new stdClass();
             $data->id = $model->getId();
@@ -73,14 +76,21 @@ class ApiViewPatientListV2 extends EApiViewService {
             $data->mobile = $model->getMobile();
             $data->diseaseName = $model->getDiseaseName();
             $data->dateUpdated = $model->getDateUpdated('m月d日');
+            $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/patientinfo');
             $booking = $model->getBookings();
-            if (arrayNotEmpty($booking)) {
-                $bookData = $this->setPatientBooking($booking[0]);
-                $this->results->hasBookingList[] = array('patientInfo' => $data, 'patientBooking' => $bookData);
-            } else {
-                $this->results->noBookingList[] = array('patientInfo' => $data);
+            if($this->hasBooking=="0"){
+                if (arrayNotEmpty($booking)) {
+                    $bookData = $this->setPatientBooking($booking[0]);
+                    $array[] = $data;
+                }
+            }
+            else{
+                if(emptyArray($booking)){
+                    $array[]=$data;
+                }
             }
         }
+        $this->results=$array;
     }
 
     private function setPatientBooking(PatientBooking $model) {

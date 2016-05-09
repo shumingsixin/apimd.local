@@ -53,8 +53,10 @@ class ApimdController extends Controller {
                 }
                 break;
             case 'city'://城市列表
+                //$this->encryptOutput($output);
                 $city = new ApiViewCity();
-                $output = $city->loadApiViewData();
+                $output = $this->encryptOutput($city->loadApiViewData());
+                //$output = $city->loadApiViewData();
                 break;
             case 'localdata'://本地需要缓存的数据
                 if ($api >= 2) {
@@ -62,18 +64,20 @@ class ApimdController extends Controller {
                 } else {
                     $apiService = new ApiViewLocalData();
                 }
-                $output = $apiService->loadApiViewData();
+                $output = $this->encryptOutput($apiService->loadApiViewData());
+                //$output = $apiService->loadApiViewData();
                 break;
             case 'patient'://我的患者列表
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
+                $hasBooking=$values['hasBooking'];//0 有预约 1 未预约
                 if ($api >= 2) {
-                    $apiService = new ApiViewPatientListV2($userId);
+                    $apiService = new ApiViewPatientListV2($userId,$hasBooking);
                 } else {
                     $apiService = new ApiViewPatientList($userId);
                 }
-                $output = $apiService->loadApiViewData();
+                $output = $this->encryptOutput($apiService->loadApiViewData());
                 break;
             case 'sendbooking'://发出的预约
                 $values = $_GET;
@@ -267,7 +271,9 @@ class ApimdController extends Controller {
                     $authMgr = new AuthManager();
                     $output = $authMgr->apiSendVerifyCode($values);
                 } else {
-                    $output['error'] = 'Wrong parameters.';
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'userlogin'://手机号和验证码登录
@@ -279,6 +285,8 @@ class ApimdController extends Controller {
                     $authMgr = new AuthManager();
                     $output = $authMgr->apiTokenDoctorLoginByMobile($values);
                 } else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
@@ -291,6 +299,8 @@ class ApimdController extends Controller {
                     $output = $authMgr->apiTokenDoctorLoginByPaw($values);
                     $output['loginType'] = 'sms';
                 } else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
@@ -301,6 +311,8 @@ class ApimdController extends Controller {
                     $userMgr = new UserManager();
                     $output = $userMgr->apiTokenDoctorRegister($values);
                 } else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
@@ -312,6 +324,8 @@ class ApimdController extends Controller {
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientInfo($user, $values);
                 } else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
@@ -324,20 +338,26 @@ class ApimdController extends Controller {
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientFile($user, $values, $file);
                 } else {
-                    $output['errorMsg'] = 'Wrong parameters';
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'patientbooking'://创建患者预约
                 if (isset($post['patientbooking'])) {
                     $values = $post['patientbooking'];
-                    //$values=array("patient_id"=>"62","doctor_id"=>"1","travel_type"=>"1","detail"=>"testtesttest");
+                    //$values=Array ( "patient_id" => "9246", "username" =>"13816439927", "token"=>"8B03B640F780AE5A01ABF0C6988A6247", "doctor_id"=> "3158", "travel_type"=> "1", "detail"=> "测试", "doctorname"=>"测试") ;
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $values['user_agent'] = ($this->isUserAgentIOS()) ? StatCode::USER_AGENT_APP_IOS : StatCode::USER_AGENT_APP_ANDROID;
+                    //print_r($values);exit;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
+                    
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientBooking($user, $values);
                 } else {
-                    $output['errorMsg'] = 'Wrong parameters';
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'profile'://创建个人信息（基本信息）
@@ -348,6 +368,8 @@ class ApimdController extends Controller {
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateProfile($user, $values);
                 } else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
@@ -360,7 +382,9 @@ class ApimdController extends Controller {
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateProfileFile($user, $file);
                 } else {
-                    $output['errorMsg'] = 'Wrong parameters';
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'applycontract'://申请成为签约专家
@@ -370,32 +394,45 @@ class ApimdController extends Controller {
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateApplyContract($user, $values);
                 } else {
-                    $output['errorMsg'] = 'Wrong parameters';
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'changepassword'://修改密码
                 if(isset($post['changepassword'])){
                     $values=$post['changepassword'];
-                    $values=array('changepassword' => array('oldPass' => '334455','newPass' => '556677', 'dPass' => '556677'));
+                    //$values=array('changepassword' => array('oldPassword' => '334455','newPassword' => '556677', 'dPassword' => '556677'));
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
-                    $userId='100370';
+                    $userId=$user->getId();
+                    //$userId='100370';
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiChangePassword($values,$userId);
+                }else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
             case 'forgetpassword'://忘记密码
                 if(isset($post['forgetpassword'])){
-                    //$values=$post['forgetpassword'];
-                    $values=array('forgetpassword' => array('username' => '13816439927','newPass' => '556677', 'smscode' => '758941'));
+                    $values=$post['forgetpassword'];
+                    //print_r($values);exit;
+                    //$values=array('forgetpassword' => array('username' => '13816439927','newPassword' => '556677', 'smscode' => '758941'));
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
-                    $user = $this->userLoginRequired($values);  // check if doctor has login.
-                    $userId='100400';
+                    //$user = $this->userLoginRequired($values);  // check if doctor has login.
+                    //$userId='100400';
+                    //$userId=$user->getId();
                     $doctorMgr = new DoctorManager();
-                    $mobile=$values['forgetpassword']['username'];
-                    $smsCode=$values['forgetpassword']['smscode'];
-                    $newPass=$values['forgetpassword']['newPass'];
-                    $output = $doctorMgr->apiForgetPassword($mobile,$smsCode,$newPass,$userId,$values['userHostIp']);
+                    $mobile=$values['username'];
+                    $smsCode=$values['smscode'];
+                    $newPass=$values['newPassword'];
+                    $output = $doctorMgr->apiForgetPassword($mobile,$smsCode,$newPass,$values['userHostIp']);
+                }else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
                 

@@ -37,6 +37,9 @@ class ApiViewLocalDataV2 extends EApiViewService {
                 'uploadtoken' => 'http://114.55.0.207/api/uploadtoken',
                 'saveappfile' => 'http://114.55.0.207/api/saveappfile',
                 'fileurl' => 'http://114.55.0.207/api/fileurl',
+                'userpawlogin' => Yii::app()->createAbsoluteUrl('/apimd/userpawlogin'),
+                'changepassword' => Yii::app()->createAbsoluteUrl('/apimd/changepassword'),
+                'userregister' => Yii::app()->createAbsoluteUrl('/apimd/userregister')
             );
 
             $this->output = array(

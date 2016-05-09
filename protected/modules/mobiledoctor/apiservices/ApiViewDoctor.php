@@ -38,6 +38,7 @@ class ApiViewDoctor extends EApiViewService {
         $data->name = $model->getName();
         $data->hospitalId = $model->getHospitalId();
         $data->hospitalName = $model->getHospitalName();
+        $data->isContracted = $model->getIsContracted();
         $data->mTitle = $model->getMedicalTitle();
         $data->aTitle = $model->getAcademicTitle();
         $data->imageUrl = $model->getAbsUrlAvatar();
@@ -48,6 +49,8 @@ class ApiViewDoctor extends EApiViewService {
         $data->careerExp = $model->getCareerExp();
         $data->honour = $model->getHonourList();
         $data->reasons = $model->getReasons();
+        $data->doctorInfo = $model->getName()."&nbsp".$model->getMedicalTitle()."&nbsp".$model->getAcademicTitle();
+        $data->hpDeptForHospital = $model->getHospitalName()."-".$model->getHpDeptName();
         $this->results = $data;
     }
 

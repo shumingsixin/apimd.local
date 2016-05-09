@@ -23,6 +23,7 @@ class AuthManager {
             $output['errorCode'] = ErrorList::ERROR_NONE;
             $output['errorMsg'] = 'success';
         } else {
+            $output['status'] = 'no';
             $output['errorMsg'] = '发送失败';
             $output['results'] = $errors;
         }

@@ -214,14 +214,14 @@ class PatientManager {
         $model->state_name = $regionState->getName();
         $regionCity = RegionCity::model()->getById($model->city_id);
         $model->city_name = $regionCity->getName();
-
+        //print_r($model);exit;
         if ($model->save()) {
             $output['status'] = EApiViewService::RESPONSE_OK;
             $output['errorCode'] = ErrorList::ERROR_NONE;
             $output['errorMsg'] = 'success';
             $output['results'] = array(
-                /* 'id' => $model->getId(),
-                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/patientfile'), */
+                'id' => $model->getId(),
+                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/patientfile'),
             );
         } else {
             $output['status'] = EApiViewService::RESPONSE_NO;
@@ -331,10 +331,12 @@ class PatientManager {
             $expected_doctor=$doctor->name."&nbsp;".$doctor->hospital_name."&nbsp;".$doctor->hp_dept_name;
         }
         $model->expected_doctor=$expected_doctor;
+        $model->doctor_id="";
+        //print_r($model);exit;
         if ($model->save()) {
             $apiRequest = new ApiRequestUrl();
-            $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
-//            $remote_url = 'http://192.168.31.119/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
+            //$remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
+          $remote_url = 'http://192.168.31.119/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
             $ret = $this->send_get($remote_url);
             if ($ret['status'] == 'no') {
                 $output['status'] = 'no';
@@ -350,6 +352,7 @@ class PatientManager {
                 $output['results'] = array(
                     'bookingId' => $model->getId(),
                     'refNo'=>$ret['salesOrderRefNo'],
+                    'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/patientinfo?id='.$model->getId()),
 //                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
                 );
 

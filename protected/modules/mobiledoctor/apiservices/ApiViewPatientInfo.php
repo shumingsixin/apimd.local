@@ -13,6 +13,7 @@ class ApiViewPatientInfo extends EApiViewService {
     private $orderMgr;
     private $patientInfo;  // array
     private $patientBooking;
+    private $salesOrder;
 
     //初始化类的时候将参数注入
 
@@ -39,7 +40,7 @@ class ApiViewPatientInfo extends EApiViewService {
                 'errorCode' => 0,
                 'errorMsg' => 'success',
                 'results' => $this->results,
-//            array('patientInfo' => $this->patientInfo, 'patientBooking' => $this->patientBooking, 'salesOrder'=>$this->salesOrder),
+                 array('patientInfo' => $this->patientInfo, 'patientBooking' => $this->patientBooking, 'salesOrder'=>$this->salesOrder),
             );
         }
     }

@@ -182,23 +182,32 @@ return array(
             ),
         ),
         // myzd-test.
-        /*  'db' => array(
+          'db' => array(
           'connectionString' => 'mysql:host=qpmyzdstaging91466636.mysql.rds.aliyuncs.com;dbname=myzd-test',
           'emulatePrepare' => true,
           'username' => 'supertestuser',
           'password' => 'Qp91466636',
           'charset' => 'utf8',
           'schemaCachingDuration' => 3600    // 开启表结构缓存（schema caching）提高性能
-          ),*/
+          ),
+        'db2' => array(
+            'connectionString' => 'mysql:host=qpmyzdstaging91466636.mysql.rds.aliyuncs.com;dbname=myzd-test2',
+            'class' => 'CDbConnection',
+            'emulatePrepare' => true,
+            'username' => 'myzdtest2user',
+            'password' => 'myzdtest29146',
+            'charset' => 'utf8',
+            'schemaCachingDuration' => 3600    // 开启表结构缓存（schema caching）提高性能
+        ),
         // 本地数据库        
-        'db' => array(
+        /*'db' => array(
             'connectionString' => 'mysql:host=localhost;dbname=myzd-prod',
             'emulatePrepare' => true,
             'username' => 'root',
             'password' => '',
             'charset' => 'utf8',
             'schemaCachingDuration' => 3600    // 开启表结构缓存（schema caching）提高性能
-        ),
+        ),*/
         'errorHandler' => array(
             // use 'site/error' action to display errors
             'errorAction' => 'site/error',

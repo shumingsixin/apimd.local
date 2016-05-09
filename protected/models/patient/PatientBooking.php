@@ -56,7 +56,7 @@ class PatientBooking extends EActiveRecord {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('patient_id, creator_id, status, travel_type, date_start, date_end,expected_doctor', 'required'),
+            array('patient_id, creator_id, status, travel_type, expected_doctor', 'required'),
             array('patient_id, creator_id, doctor_id, status, travel_type', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('user_agent, doctor_name, patient_name, creator_name', 'length', 'max' => 20),

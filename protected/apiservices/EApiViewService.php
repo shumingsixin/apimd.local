@@ -9,13 +9,15 @@ abstract class EApiViewService {
     const RESPONSE_VALIDATION_ERRORS = 'Validation errors'; //400
 
     protected $results;
+    protected $encryptOutput;
     public $output; // used for output data.
 
     public function __construct($value1 = null, $value2 = null, $value3 = null, $value4 = null) {
         $this->results = new stdClass();
     }
 
-    public function loadApiViewData() {
+    public function loadApiViewData($encryptOutput=false) {
+        $this->encryptOutput=$encryptOutput;
         try {
             $this->loadData();
             $this->createOutput();
@@ -35,7 +37,12 @@ abstract class EApiViewService {
         if (is_array($this->output)) {
             $this->output = (object) $this->output;
         }
-
+        //Doctor::model();
+        //print_r($this->output->results);exit;
+        if($this->encryptOutput){
+            $this->encryptOutput();
+        }
+        
         return $this->output;
     }
 
@@ -58,6 +65,14 @@ abstract class EApiViewService {
       }
      * 
      */
+    
+    protected function encryptOutput(){
+        $output = $this->output;
+        // ENCRYPT...
+        // $encryptedOutput = 
+        $this->output = $encryptedOutput;
+        
+    }
 
     protected function createErrorOutput($errorMsg = "", $errorCode = 400) {
         $this->output = array(
