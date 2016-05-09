@@ -214,12 +214,12 @@ abstract class Controller extends CController {
     public function decryptInput($json){
         $x=json_decode($json,true);
         $client='app';
-        $rasConfig = Encryption::model()->getByClient($client);
+        $rasConfig = CoreRasConfig::model()->getByClient($client);
         $publicKey = $rasConfig->public_key;
         $privateKey=$rasConfig->private_key;
         $m = new RsaEncrypter($publicKey, $privateKey);
-        $y = $m->newDecrypt($x);
-        return $y;
+        $decrypt = $m->newDecrypt($x);
+        return $decrypt;
     }
 
 }

@@ -77,7 +77,8 @@ class ApimdController extends Controller {
                 } else {
                     $apiService = new ApiViewPatientList($userId);
                 }
-                $output = $this->encryptOutput($apiService->loadApiViewData());
+                //$output = $this->encryptOutput($apiService->loadApiViewData());
+                $output = $apiService->loadApiViewData();
                 break;
             case 'sendbooking'://发出的预约
                 $values = $_GET;
