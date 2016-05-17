@@ -286,7 +286,8 @@ class ApimdController extends Controller {
                 $values = $_GET;
                 if (count($values) > 1) {
                     $apiService = new ApiViewOrderPayment($values);
-                    $output = $apiService->loadApiViewData();
+                    $output = $this->encryptOutput($apiSvc->loadApiViewData());
+                    //$output = $apiService->loadApiViewData();
                 }
                 break;
             default:
