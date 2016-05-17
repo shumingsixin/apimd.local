@@ -511,5 +511,18 @@ class Booking extends EActiveRecord {
     public function getUserAgent() {
         return $this->user_agent;
     }
-
+    
+    public function setDoctorAccept($v) {
+        $this->doctor_accept = $v;
+    }
+    
+    public function setDoctorOpinion($v) {
+        $this->doctor_opinion = $v;
+    }
+    
+    //根据上级医生用户id和bookingid查询预约详情
+    public function getByIdAndDoctorUserId($id, $doctorUserId) {
+        return $this->getByAttributes(array('id' => $id, 'doctor_user_id' => $doctorUserId));
+    }
+    
 }

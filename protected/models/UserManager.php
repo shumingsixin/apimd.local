@@ -271,6 +271,7 @@ class UserManager {
         $output = array('status' => 'no'); // default status is false.
         // TODO: wrap the following method. first, validates the parameters in $values.        
         if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = 'Wrong parameters.';
             return $output;
@@ -289,12 +290,14 @@ class UserManager {
         $authMgr = new AuthManager();
         $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
         if ($authSmsVerify->isValid() === false) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = $authSmsVerify->getError('code');
             return $output;
         }
         // Check if username exists.
         if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = '该手机号已被注册';
             return $output;
@@ -304,15 +307,21 @@ class UserManager {
         // Creates a new User model.
         $user = $this->doRegisterDoctor($mobile, $password);
         if ($user->hasErrors()) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = $user->getFirstErrors();
             return $output;
         } else if ($autoLogin) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $user->getFirstErrors();
             // auto login user and return token.            
             $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
         } else {
-            $output['status'] = 'ok';
+            $output['status'] = EApiViewService::RESPONSE_OK;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = 'success';
+            $output['results'] = [];
         }
         // deactive current smsverify.                
         if (isset($authSmsVerify)) {

@@ -64,7 +64,6 @@ class ApiViewPatientListV2 extends EApiViewService {
 
     //查询到的数据过滤
     private function setPatientList(array $models) {
-        //print_r($models);exit;
         foreach ($models as $model) {
             $data = new stdClass();
             $data->id = $model->getId();
@@ -76,12 +75,17 @@ class ApiViewPatientListV2 extends EApiViewService {
             $data->mobile = $model->getMobile();
             $data->diseaseName = $model->getDiseaseName();
             $data->dateUpdated = $model->getDateUpdated('m月d日');
-            $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/patientinfo');
+            $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/patientinfo/'.$data->id);
             $booking = $model->getBookings();
             if($this->hasBooking=="0"){
                 if (arrayNotEmpty($booking)) {
                     $bookData = $this->setPatientBooking($booking[0]);
-                    $array[] = $data;
+                    $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$bookData->id);
+                    $data->patientBookingId = $bookData->id;
+                    $array[]=$data;
+                    //$array[]=array("patieninfo"=>$data,"patienbooking"=>$bookData);
+//                     $array[]["patieninfo"][] = $data;
+//                     $array[]["patienbooking"][] = $bookData;
                 }
             }
             else{
@@ -89,8 +93,14 @@ class ApiViewPatientListV2 extends EApiViewService {
                     $array[]=$data;
                 }
             }
+            
         }
-        $this->results=$array;
+        if(arrayNotEmpty($array)){
+            $this->results=$array;
+        }
+        else{
+            $this->results=[];
+        }
     }
 
     private function setPatientBooking(PatientBooking $model) {
@@ -99,6 +109,7 @@ class ApiViewPatientListV2 extends EApiViewService {
         $data->refNo = $model->getRefNo();
         $data->creatorId = $model->getCreatorId();
         $data->status = $model->getStatus(false);
+        $data->expectedDoctor = $model->getExpectedDoctor();
         $data->statusCode = $model->getStatus();
         $data->travelType = $model->getTravelType();
         $data->dateStart = $model->getDateStart();
@@ -110,6 +121,7 @@ class ApiViewPatientListV2 extends EApiViewService {
         $data->dateCreated = $model->getDateCreated();
         $data->dateUpdated = $model->getDateUpdated('Y年m月d日 h:i');
         $data->dateNow = date('Y-m-d H:i', time());
+        $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$data->id);
         return $data;
     }
 

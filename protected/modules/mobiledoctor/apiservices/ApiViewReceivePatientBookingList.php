@@ -9,9 +9,10 @@ class ApiViewReceivePatientBookingList extends EApiViewService {
     private $page = 1;
 
     //初始化类的时候将参数注入
-    public function __construct($doctorId, $pagesize = 100, $page = 1) {
+    public function __construct($doctorId,$status, $pagesize = 100, $page = 1) {
         parent::__construct();
         $this->doctorId = $doctorId;
+        $this->status = $status;
         $this->pagesize = $pagesize;
         $this->page = $page;
         $this->patientMgr = new PatientManager();
@@ -41,14 +42,17 @@ class ApiViewReceivePatientBookingList extends EApiViewService {
         $attributes = null;
         $with = array('pbPatient');
         $options = array('limit' => $this->pagesize, 'offset' => (($this->page - 1) * $this->pagesize), 'order' => 't.date_updated DESC');
-        $models = $this->patientMgr->loadPatientBookingListByDoctorId($this->doctorId, $attributes, $with, $options);
+        $models = $this->patientMgr->loadPatientBookingListByDoctorId($this->doctorId,$this->status, $attributes, $with, $options);
         if (arrayNotEmpty($models)) {
             $this->setPatientBookings($models);
+        }
+        else{
+            $this->results=[];
         }
     }
 
     public function loadCount() {
-        return $this->patientMgr->loadPatientBookingNumberByDoctorId($this->doctorId);
+        return $this->patientMgr->loadPatientBookingNumberByDoctorId($this->doctorId,$this->status);
     }
 
     //查询到的数据过滤
@@ -65,6 +69,8 @@ class ApiViewReceivePatientBookingList extends EApiViewService {
             $data->dateUpdated = $model->getDateUpdated('m月d日');
             $data->travelType = $model->getTravelType();
             $data->createId = $model->getCreatorId();
+            $data->createId = $model->getCreatorId();
+            $data->doctorAccept = $model->getDoctorAccept();
             $patientInfo = $model->getPatient();
             if (isset($patientInfo)) {
                 $data->patientId = $patientInfo->getId();
@@ -83,7 +89,7 @@ class ApiViewReceivePatientBookingList extends EApiViewService {
                 $data->age = '';
                 $data->ageMonth = '';
             }
-            $this->results->data[] = $data;
+            $array[] = $data;
 //            switch($model->status)
 //            {
 //                case StatCode::BK_STATUS_NEW:

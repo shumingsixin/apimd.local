@@ -58,7 +58,7 @@ class PatientBooking extends EActiveRecord {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('patient_id, creator_id, status, travel_type, expected_doctor', 'required'),
+            array('patient_id, creator_id, status, travel_type', 'required'),
             array('patient_id, creator_id, doctor_id, status, travel_type', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('user_agent, doctor_name, patient_name, creator_name', 'length', 'max' => 20),
@@ -193,8 +193,14 @@ class PatientBooking extends EActiveRecord {
     }
 
     //查询预约该医生的患者列表
-    public function getAllByDoctorId($doctorId, $attributes = '*', $with = null, $options = null) {
-        return $this->getAllByAttributes(array('t.doctor_id' => $doctorId), $with, $options);
+    public function getAllByDoctorId($doctorId,$status, $attributes = '*', $with = null, $options = null) {
+        if($status==0){
+           $array=array('t.doctor_id' => $doctorId);            
+        }
+        else{
+           $array=array('t.doctor_id' => $doctorId,'t.status' => $status);
+        }
+        return $this->getAllByAttributes($array, $with, $options);
     }
 
     //查询预约该医生的患者详细信息
@@ -254,6 +260,10 @@ class PatientBooking extends EActiveRecord {
     
     public function getDoctorName() {
         return $this->doctor_name;
+    }
+    
+    public function getCsExplain(){
+        return $this->cs_explain;
     }
 
     public function getOptionsBkStatus() {
@@ -355,7 +365,26 @@ class PatientBooking extends EActiveRecord {
     public function setDoctorName($v) {
         $this->doctor_name = $v;
     }
-
+    
+    public function getTitleBkStatus() {
+        return array(
+            self::BK_STATUS_NEW => '请您支付手术预约金',
+            self::BK_STATUS_PROCESSING => '当前状态:安排专家中',
+            self::BK_STATUS_SERVICE_UNPAID => '当前状态:待支付平台咨询费',
+            self::BK_STATUS_SERVICE_PAIDED => '当前状态:待上传出院小结',
+            self::BK_STATUS_SURGER_DONE => '感谢你协助完成了该例手术!',
+        );
+    }
+    
+    public function getStatusTitle() {
+        $options = self::getTitleBkStatus();
+        if (isset($options[$this->status])) {
+            return $options[$this->status];
+        } else {
+            return StatCode::ERROR_UNKNOWN;
+        }
+    }
+    
     /*     * ****** Private Methods ******* */
 
     private function createRefNumber() {
@@ -370,5 +399,20 @@ class PatientBooking extends EActiveRecord {
             }
         }
     }
-
+    
+    public function setDoctorAccept($v) {
+        $this->doctor_accept = $v;
+    }
+    
+    public function setDoctorOpinion($v) {
+        $this->doctor_opinion = $v;
+    }
+    
+    public function getDoctorAccept(){
+        return $this->doctor_accept;
+    }
+    
+    public function getDoctorOpinion(){
+        return $this->doctor_opinion;
+    }
 }

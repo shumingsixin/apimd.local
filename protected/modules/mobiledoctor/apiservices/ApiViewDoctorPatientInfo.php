@@ -76,9 +76,12 @@ class ApiViewDoctorPatientInfo extends EApiViewService {
         $data->refNo = $model->getRefNo();
         $data->creatorId = $model->getCreatorId();
         $data->status = $model->getStatus();
-
+        $data->expected_doctor = $model->getExpectedDoctor();
         $data->statusCode = $model->getStatus(false);
         $data->travelType = $model->getTravelType();
+        $data->csExplain = $model->getCsExplain();
+        $data->doctorAccept = $model->getDoctorAccept();
+        $data->doctorOpinion = $model->getDoctorOpinion();
         $data->dateStart = $model->getDateStart();
         $data->dateEnd = $model->getDateEnd();
         $data->detail = $model->getDetail(false);

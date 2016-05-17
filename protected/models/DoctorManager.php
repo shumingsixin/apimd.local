@@ -430,7 +430,7 @@ class DoctorManager {
             if (is_object($model)) {
                 $output['status'] = EApiViewService::RESPONSE_NO;
                 $output['errorCode'] = ErrorList::UNAUTHORIZED;
-                $output['errorMsg'] = '您没有权限执行此操作';
+                $output['errorMsg'] = '用户信息已存在，不可重复添加';
                 return $output;
             }
             $model = new UserDoctorProfile();
@@ -677,4 +677,53 @@ class DoctorManager {
             return $output;
         }
     }
+    
+    /**
+     * 创建上级医生反馈
+     */
+    public function apiDoctorOpinion($id, $type, $accept, $opinion,$userId) {
+        if ($type == StatCode::TRANS_TYPE_PB) {
+            $booking = PatientBooking::model()->getByAttributes(array('doctor_id' => $userId, 'id' => $id));
+        } else {
+            $booking = Booking::model()->getByIdAndDoctorUserId($id, $userId);
+        }
+        if (isset($booking)) {
+            //echo $accept."|".$opinion;exit;
+            $booking->setDoctorAccept($accept);
+            $booking->setDoctorOpinion($opinion);
+            if ($booking->update(array('doctor_accept', 'doctor_opinion'))) {
+                //医生评价成功 调用crm接口修改admin_booking的接口
+                //$urlMgr = new ApiRequestUrl();
+                // $url = $urlMgr->getUrlDoctorAccept() . "?id={$id}&type={$type}&accept={$accept}&option={$option}";
+                $url = "http://192.168.31.119/admin/api/doctoraccept?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+                $this->send_get($url);
+                $output['status'] = EApiViewService::RESPONSE_OK;
+                $output['errorCode'] = ErrorList::ERROR_NONE;
+                $output['errorMsg'] = 'success';
+                $output['results'] = array(
+                    'id' => $booking->getId(),
+                );
+            } else {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::BAD_REQUEST;
+                $output['errorMsg'] = $booking->getErrors();
+            }
+        } else {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = 'no data..';
+        }
+        return $output;
+    }
+    
+    /**
+     * 发送get请求
+     * @param unknown $url
+     * @return mixed
+     */
+    function send_get($url) {
+        $result = file_get_contents($url, false);
+        return json_decode($result, true);
+    }
+    
 }

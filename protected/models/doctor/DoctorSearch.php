@@ -18,7 +18,7 @@ class DoctorSearch extends ESearchModel {
     public function addQueryConditions() {
         $this->criteria->addCondition('t.date_deleted is NULL');
         $this->criteria->compare('t.is_contracted', '1');
-        $this->criteria->addCondition('t.user_id is not null');
+        //$this->criteria->addCondition('t.user_id is not null');
         if ($this->hasQueryParams()) {
             // Doctor.medical_title
             if (isset($this->queryParams['mtitle'])) {
@@ -69,11 +69,16 @@ class DoctorSearch extends ESearchModel {
             }
             // disease_sub_category.
             if (isset($this->queryParams['disease_sub_category'])) {
-                $category_id= $this->queryParams['disease_sub_category'];
+                $category_id = $this->queryParams['disease_sub_category'];
+                $this->criteria->join = 'left join disease_doctor_join b on t.id=b.doctor_id left join category_disease_join c on c.disease_id=b.disease_id ';
+                $this->criteria->addCondition("c.sub_cat_id=:category_id");
+                $this->criteria->params[":category_id"] = $category_id;
+                $this->criteria->distinct = true;
+                /* $category_id= $this->queryParams['disease_sub_category'];
                 $this->criteria->join = 'left join disease_doctor_join b on t.id=b.doctor_id left join disease c on c.id=b.disease_id ';
                 $this->criteria->addCondition("c.category_id=:category_id");
                 $this->criteria->params[":category_id"] = $category_id;
-                $this->criteria->distinct = true;
+                $this->criteria->distinct = true; */
             }
         }
     }

@@ -53,10 +53,8 @@ class ApimdController extends Controller {
                 }
                 break;
             case 'city'://城市列表
-                //$this->encryptOutput($output);
                 $city = new ApiViewCity();
-                $output = $this->encryptOutput($city->loadApiViewData());
-                //$output = $city->loadApiViewData();
+                $output = $city->loadApiViewData();
                 break;
             case 'localdata'://本地需要缓存的数据
                 if ($api >= 2) {
@@ -64,8 +62,7 @@ class ApimdController extends Controller {
                 } else {
                     $apiService = new ApiViewLocalData();
                 }
-                $output = $this->encryptOutput($apiService->loadApiViewData());
-                //$output = $apiService->loadApiViewData();
+                $output = $apiService->loadApiViewData();
                 break;
             case 'patient'://我的患者列表
                 $values = $_GET;
@@ -77,7 +74,6 @@ class ApimdController extends Controller {
                 } else {
                     $apiService = new ApiViewPatientList($userId);
                 }
-                //$output = $this->encryptOutput($apiService->loadApiViewData());
                 $output = $apiService->loadApiViewData();
                 break;
             case 'sendbooking'://发出的预约
@@ -85,17 +81,19 @@ class ApimdController extends Controller {
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
                 $status = $values['status'];
+                $page = $values['page'];
                 //$userId='100370';
                 //$status=0;
-                $apisvc = new ApiViewSendPatientBookingList($userId, $status);
+                $apisvc = new ApiViewSendPatientBookingList($userId, $status,"100",$page);
                 $output = $apisvc->loadApiViewData();
-                //print_r($output);exit;
                 break;
             case 'receivebooking'://收到的预约
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
                 $doctorId = $user->getId();
-                $apisvc = new ApiViewReceivePatientBookingList($doctorId);
+                $apisvc = new ApiViewReceivePatientBookingList($doctorId,$values['status']);
+                //$output =$apisvc->loadApiViewData();
+                //print_r(json_decode(json_encode($output),true));exit;
                 $output = $apisvc->loadApiViewData();
                 break;
             case 'profile'://查看个人信息（基本信息）
@@ -110,11 +108,11 @@ class ApimdController extends Controller {
                 $apiService = new ApiViewDoctorFiles($user->getId());
                 $output = $apiService->loadApiViewData();
                 break;
-
             case 'appversion':
-                $get = $_GET;
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
                 $appMgr = new AppManager();
-                $output = $appMgr->loadAppVersionJson($get);
+                $output = $appMgr->loadAppVersionJson($values);
                 break;
 
             case 'patientbookinginfo'://已发出预约详情
@@ -122,8 +120,6 @@ class ApimdController extends Controller {
                 $user = $this->userLoginRequired($values);
                 $patientId = $values['id'];
                 $creatorId = $user->getId();
-                //$creatorId='100370';
-                //$patientId='62';
                 $apiService = new ApiViewPatientInfo($patientId, $creatorId);
                 $output = $apiService->loadApiViewData();
                 break;
@@ -135,11 +131,10 @@ class ApimdController extends Controller {
 
             case 'contractdoctor'://签约医生
                 $values = $_GET;
-                //if (count($values) > 1) {
-                    $apiService = new ApiViewDoctorSearch($values);
-                    $output = $apiService->loadApiViewData();
-                    //print_r(json_decode(json_encode($output),true));
-                //}
+                //$user = $this->userLoginRequired($values);
+                $apiService = new ApiViewDoctorSearch($values);
+                //$output = $apiService->loadApiViewData();
+                $output = $apiService->loadApiViewData();
                 break;
             
             case 'orderpayment'://预约单支付列表
@@ -174,6 +169,16 @@ class ApimdController extends Controller {
                 $output = $apiService->loadApiViewData();
                 //print_r(json_decode(json_encode($output,true)));exit;
                 break;
+            case 'isVerified'://是否实名认证
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
+                $userId=$user->getId();
+                //print_r($userInfo);exit;
+                $apiSvc = new ApiViewDoctorVerified($userId);
+                $output = $apiSvc->loadApiViewData();
+                //$output = $this->encryptOutput($isContract);
+                //print_r(json_decode(json_encode($output),true));
+                break;
             default:
                 // Model not implemented error
                 //$this->_sendResponse(501, sprintf('Error: Mode <b>list</b> is not implemented for model <b>%s</b>', $model));
@@ -186,6 +191,13 @@ class ApimdController extends Controller {
             //$this->_sendResponse(200, sprintf('No items where found for model <b>%s</b>', $model));
             $this->_sendResponse(200, sprintf('No result', $model));
         } else {
+            /* if($output->status=="ok"){
+                if(arrayNotEmpty($output->results)==true){
+                    $output->results=[];
+                }
+            } */
+            //print_r(json_decode(json_encode($output),true));exit;
+            $output=$this->encryptOutput($output);
             $this->renderJsonOutput($output);
             //  header('Content-Type: text/html; charset=utf-8');
             // var_dump($output);
@@ -199,6 +211,7 @@ class ApimdController extends Controller {
         }
         $output = null;
         $api = $this->getApiVersionFromRequest();
+        
         switch ($model) {
             // Find respective model
 
@@ -207,21 +220,23 @@ class ApimdController extends Controller {
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
                 $apisvc = new ApiViewPatientInfo($id, $userId);
-                $output = $apisvc->loadApiViewData();
+                //$output = $apisvc->loadApiViewData();
+                //print_r(json_decode(json_encode($output),true));
+                $output = $this->encryptOutput($apisvc->loadApiViewData());
                 break;
             case 'doctorpatientinfo'://收到的患者详情患者资料和就诊意向
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
                 $apisvc = new ApiViewPatientBookingForDoctor($id, $userId);
-                $output = $apisvc->loadApiViewData();
+                $output = $this->encryptOutput($apisvc->loadApiViewData());
                 break;
             case 'patientfile'://我的患者(病历/出院小结)图片
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);
                 $userId = $user->getId();
                 $apisvc = new ApiViewFilesOfPatient($id, $userId, $values);
-                $output = $apisvc->loadApiViewData();
+                $output = $this->encryptOutput($apisvc->loadApiViewData());
                 break;
 
             case 'doctorpatientfile'://收到的患者(病历/出院小结)图片
@@ -229,7 +244,7 @@ class ApimdController extends Controller {
                 $user = $this->userLoginRequired($values);
                 $creatorId = $values['creatorId'];
                 $apisvc = new ApiViewFilesOfPatient($id, $creatorId, $values);
-                $output = $apisvc->loadApiViewData();
+                $output = $this->encryptOutput($apisvc->loadApiViewData());
                 break;
             
             case 'doctorinfo'://医生信息
@@ -237,7 +252,35 @@ class ApimdController extends Controller {
                 //$user = $this->userLoginRequired($values);
                 $doctorId = $values['id'];
                 $apisvc = new ApiViewDoctor($doctorId);
-                $output = $apisvc->loadApiViewData();
+                $output = $this->encryptOutput($apisvc->loadApiViewData());
+                break;
+            case 'payorders'://支付页面-分批支付
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
+                $bookingId = $values['id'];
+                $orderType = $values['ordertype'];
+                $apiSvc = new ApiViewPayOrders($bookingId, $orderType);
+                $output = $this->encryptOutput($apiSvc->loadApiViewData());
+                //print_r(json_decode(json_encode($output),true));
+                break;
+            case 'orderview'://预约单详情
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
+                $bookingId = $values['id'];
+                $apiSvc = new ApiViewBookOrder($bookingId);
+                //$output = $apiSvc->loadApiViewData();
+                $output = $this->encryptOutput($apiSvc->loadApiViewData());
+                //print_r(json_decode(json_encode($output),true));
+                break;
+            case 'patientbookingview'://预约单详情（查看全部）
+                $values = $_GET;
+                $user = $this->userLoginRequired($values);
+                $userId=$user->getId();
+                $id = $values['id'];
+                $apiSvc = new ApiViewDoctorPatientInfo($id, $userId);
+                //$output = $apiSvc->loadApiViewData();
+                $output = $this->encryptOutput($apiSvc->loadApiViewData());
+                //print_r(json_decode(json_encode($output),true));
                 break;
             default:
                 $this->_sendResponse(501, sprintf('Mode <b>view</b> is not implemented for model <b>%s</b>', $model));
@@ -256,10 +299,15 @@ class ApimdController extends Controller {
         $get = $_GET;
         if (empty($_POST)) {
             // application/json
-            $post = CJSON::decode($this->getPostData());
+            //$postData=$this->getPostData();
+            $postData=urldecode($this->getPostData());
+            $post=$this->decryptInput($postData); 
+            //print_r($post);exit;
         } else {
             // application/x-www-form-urlencoded
-            $post = $_POST;
+            //$post = $this->decryptInput($_POST["param"]);
+            $post = $this->decryptInput($_POST["name"]);
+            //$post = $_POST;
         }
         $api = $this->getApiVersionFromRequest();
         $output = array('status' => EApiViewService::RESPONSE_NO, 'errorCode' => ErrorList::BAD_REQUEST, 'errorMsg' => 'Invalid request.');
@@ -281,7 +329,6 @@ class ApimdController extends Controller {
                 if (isset($post['userLogin'])) {
                     // get user ip from request.
                     $values = $post['userLogin'];
-
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $authMgr = new AuthManager();
                     $output = $authMgr->apiTokenDoctorLoginByMobile($values);
@@ -306,8 +353,8 @@ class ApimdController extends Controller {
                 }
                 break;
             case 'userregister':
-                if (isset($post['register'])) {
-                    $values = $post['register'];
+                if (isset($post['userregister'])) {
+                    $values = $post['userregister'];
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $userMgr = new UserManager();
                     $output = $userMgr->apiTokenDoctorRegister($values);
@@ -350,9 +397,7 @@ class ApimdController extends Controller {
                     //$values=Array ( "patient_id" => "9246", "username" =>"13816439927", "token"=>"8B03B640F780AE5A01ABF0C6988A6247", "doctor_id"=> "3158", "travel_type"=> "1", "detail"=> "测试", "doctorname"=>"测试") ;
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $values['user_agent'] = ($this->isUserAgentIOS()) ? StatCode::USER_AGENT_APP_IOS : StatCode::USER_AGENT_APP_ANDROID;
-                    //print_r($values);exit;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
-                    
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientBooking($user, $values);
                 } else {
@@ -436,12 +481,51 @@ class ApimdController extends Controller {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
                 break;
+            case 'doctoropinion'://上级医生反馈
+                if(isset($post['doctoropinion'])){
+                    $values=$post['doctoropinion'];
+                    //$values=array("id"=>"50","type"=>"2","accept"=>"0","opinion"=>"","username"=>"13816439927","token"=>"8B03B640F780AE5A01ABF0C6988A6247");
+                    $user = $this->userLoginRequired($values);
+                    $userId=$user->getId();
+                    $doctorMgr = new DoctorManager();
+                    $id=$values['id'];
+                    $type=$values['type'];
+                    $accept=$values['accept'];
+                    $opinion=$values['opinion'];
+                    $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                    $output = $doctorMgr->apiDoctorOpinion($id, $type, $accept, $opinion, $userId);
+                }else {
+                    $output['status'] = EApiViewService::RESPONSE_NO;
+                    $output['errorCode'] = ErrorList::BAD_REQUEST;
+                    $output['errorMsg'] = 'Wrong parameters.';
+                }
+                break;
                 
+                case 'testpost'://上级医生反馈
+                    print_r($post);exit;
+                    if(isset($post['testpost'])){
+                        $values=$post['doctoropinion'];
+                        //$values=array("id"=>"50","type"=>"2","accept"=>"0","opinion"=>"","username"=>"13816439927","token"=>"8B03B640F780AE5A01ABF0C6988A6247");
+                        $user = $this->userLoginRequired($values);
+                        $userId=$user->getId();
+                        $doctorMgr = new DoctorManager();
+                        $id=$values['id'];
+                        $type=$values['type'];
+                        $accept=$values['accept'];
+                        $opinion=$values['opinion'];
+                        $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                        $output = $doctorMgr->apiDoctorOpinion($id, $type, $accept, $opinion, $userId);
+                    }else {
+                        $output['status'] = EApiViewService::RESPONSE_NO;
+                        $output['errorCode'] = ErrorList::BAD_REQUEST;
+                        $output['errorMsg'] = 'Wrong parameters.';
+                    }
+                    break;
             default:
                 $this->_sendResponse(501, sprintf('Error: Invalid request', $model));
                 Yii::app()->end();
         }
-        $this->renderJsonOutput($output);
+        $this->renderJsonOutput($this->encryptOutput($output));
     }
 
     public function actionUpdate($model, $id) {
@@ -452,10 +536,14 @@ class ApimdController extends Controller {
         if (empty($_POST)) {
 
             // application/json
-            $post = CJSON::decode($this->getPostData());
+            $postData=urldecode($this->getPostData());
+            $post=$this->decryptInput($postData);
+            //print_r($post);
+            //$post = CJSON::decode($this->getPostData());
         } else {
             // application/x-www-form-urlencoded
-            $post = $_POST;
+            //$post = $_POST;
+            $post = $this->decryptInput($_POST["name"]);
         }
         $api = $this->getApiVersionFromRequest();
         $output = array('status' => EApiViewService::RESPONSE_NO, 'errorCode' => ErrorList::BAD_REQUEST, 'errorMsg' => 'Invalid request.');
@@ -467,7 +555,6 @@ class ApimdController extends Controller {
                     $values = $post['patient'];
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
-
                     $patientMgr = new PatientManager();
                     $output = $patientMgr->apiCreatePatientInfo($user, $values, $id);
                 } else {
@@ -478,20 +565,20 @@ class ApimdController extends Controller {
                 if (isset($post['profile'])) {
                     $values = $post['profile'];
                     $values['userHostIp'] = Yii::app()->request->userHostAddress;
+                    //print_r($values);exit;
                     $user = $this->userLoginRequired($values);  // check if doctor has login.
                     $doctorMgr = new DoctorManager();
                     $output = $doctorMgr->apiCreateProfile($user, $values, $id);
                 } else {
                     $output['errorMsg'] = 'Wrong parameters.';
                 }
-
                 break;
             
             default:
                 $this->_sendResponse(501, sprintf('Error: Invalid request', $model));
                 Yii::app()->end();
         }
-        $this->renderJsonOutput($output);
+        $this->renderJsonOutput($this->encryptOutput($output));
     }
 
     public function actionDelete($model, $id) {
@@ -625,7 +712,7 @@ class ApimdController extends Controller {
     }
 
     private function getApiVersionFromRequest() {
-        return Yii::app()->request->getParam("api", 1);
+        return Yii::app()->request->getParam("api", 3);
     }
 
 }

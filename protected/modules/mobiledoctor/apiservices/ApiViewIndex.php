@@ -12,6 +12,7 @@ class ApiViewIndex extends EApiViewService {
     protected function loadData() {
         $this->loadDoctors();
         $this->loadBanners();
+        $this->setUrl();
     }
 
     protected function createOutput() {
@@ -94,7 +95,7 @@ class ApiViewIndex extends EApiViewService {
                 '4'=>array('68','3175','65','3100','3025'),
                 '5'=>array('290','130','359','3050','3049'),
                 '6'=>array('3173','2999','270','3106','3102'),
-                '7'=>array('3105','3004','3174','3027','2992')
+                '0'=>array('3105','3004','3174','3027','2992')
                 /* '1'=>array('3217','1784','3051','3078','1887'),
                    '2'=>array('1624','1750','3069','3220','3232'),
                    '3'=>array('3193','3196','3042','3038','3054'),
@@ -108,6 +109,15 @@ class ApiViewIndex extends EApiViewService {
                    */
         );
         return $array[$day];
+    }
+    
+    /*
+     * 填充首页 签约专家列表，加入名医公益，了解名医主刀URL 
+     */
+    private function setUrl() {
+        $this->results->publicWelfareUrl = "http://192.168.31.107/md2.myzd.com/mobiledoctor/home/page/view/mygy";
+        $this->results->doctorUrl = Yii::app()->createAbsoluteUrl('/apimd/contractdoctor');;
+        $this->results->joinUrl = "http://192.168.31.107/md2.myzd.com/mobiledoctor/home/page/view/myzd";
     }
 }
 ?>

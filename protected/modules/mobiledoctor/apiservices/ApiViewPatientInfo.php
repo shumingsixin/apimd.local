@@ -39,8 +39,7 @@ class ApiViewPatientInfo extends EApiViewService {
                 'status' => self::RESPONSE_OK,
                 'errorCode' => 0,
                 'errorMsg' => 'success',
-                'results' => $this->results,
-                 array('patientInfo' => $this->patientInfo, 'patientBooking' => $this->patientBooking, 'salesOrder'=>$this->salesOrder),
+                'results' => $this->results
             );
         }
     }
@@ -86,6 +85,13 @@ class ApiViewPatientInfo extends EApiViewService {
         $data->id = $model->getId();
         $data->refNo = $model->getRefNo();
         $data->creatorId = $model->getCreatorId();
+        $data->creatorName=$model->getCreatorName();
+        if($model->getExpectedDoctor()){
+            $doctorInfo=explode("&nbsp;", $model->getExpectedDoctor());
+            $data->doctorName=$doctorInfo[0];
+            $data->hospitalName=$doctorInfo[1];
+            $data->departmentName=$doctorInfo[2];
+        }
         $data->status = $model->getStatus(false);
         $data->statusCode = $model->getStatus();
         $data->travelType = $model->getTravelType();

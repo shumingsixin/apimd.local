@@ -41,9 +41,12 @@ class PatientManager {
     }
 
     //查询该医生所有的预约患者总数
-    public function loadPatientBookingNumberByDoctorId($doctor_id) {
+    public function loadPatientBookingNumberByDoctorId($doctor_id,$status) {
         $criteria = new CDbCriteria();
         $criteria->compare('t.doctor_id', $doctor_id);
+        if($status>0){
+            $criteria->compare('t.status', $status);
+        }
         $criteria->addCondition('t.date_deleted is NULL');
         return PatientBooking::model()->count($criteria);
     }
@@ -68,8 +71,8 @@ class PatientManager {
     }
 
     //查询预约该医生的患者列表
-    public function loadPatientBookingListByDoctorId($doctorId, $attributes = '*', $with = null, $options = null) {
-        return PatientBooking::model()->getAllByDoctorId($doctorId, $with = null, $options = null);
+    public function loadPatientBookingListByDoctorId($doctorId,$status, $attributes = '*', $with = null, $options = null) {
+        return PatientBooking::model()->getAllByDoctorId($doctorId,$status, $with = null, $options = null);
     }
 
     //查询预约该医生的患者详细信息
@@ -320,15 +323,28 @@ class PatientManager {
         }
         $model->patient_name = $patientName;
         $model->detail=$values['detail'];
-        $doctor = Doctor::model()->getById($values['doctor_id']);
-        if(is_null($doctor)){
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::UNAUTHORIZED;
-            $output['errorMsg'] = '未找到该医生';
-            return $output;
+        if($values['doctor_id']){
+          $doctor = Doctor::model()->getById($values['doctor_id']);
+            if(is_null($doctor)){
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                $output['errorMsg'] = '未找到该医生';
+                return $output;
+            }else{
+                $expected_doctor=$doctor->name."&nbsp;".$doctor->hospital_name."&nbsp;".$doctor->hp_dept_name;
+            }
+        }elseif($values['expected_doctor']){
+            if($values['expected_doctor']){
+                $expected_doctor=$values['expected_doctor'];
+            }else{
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                $output['errorMsg'] = '未找到该医生';
+                return $output;
+            }
         }
         else{
-            $expected_doctor=$doctor->name."&nbsp;".$doctor->hospital_name."&nbsp;".$doctor->hp_dept_name;
+            $expected_doctor="";
         }
         $model->expected_doctor=$expected_doctor;
         $model->doctor_id="";
@@ -352,7 +368,7 @@ class PatientManager {
                 $output['results'] = array(
                     'bookingId' => $model->getId(),
                     'refNo'=>$ret['salesOrderRefNo'],
-                    'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/patientinfo?id='.$model->getId()),
+                    'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$model->getId()),
 //                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
                 );
 

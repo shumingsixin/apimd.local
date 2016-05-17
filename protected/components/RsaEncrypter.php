@@ -130,11 +130,9 @@ class RsaEncrypter{
     
    
     public function decrypt($data, $code = 'base64', $padding = OPENSSL_PKCS1_PADDING, $rev = false){
-        
         $ret = false;
-    
         $data = $this->_decode($data, $code);
-    
+
         if (!$this->_checkPadding($padding, 'de')) $this->_error('padding error');
     
         if ($data !== false){
@@ -146,7 +144,6 @@ class RsaEncrypter{
             }
     
         }
-    
         return $ret;
     
     }

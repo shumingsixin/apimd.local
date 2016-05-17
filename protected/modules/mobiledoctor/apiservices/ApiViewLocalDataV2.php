@@ -39,7 +39,16 @@ class ApiViewLocalDataV2 extends EApiViewService {
                 'fileurl' => 'http://114.55.0.207/api/fileurl',
                 'userpawlogin' => Yii::app()->createAbsoluteUrl('/apimd/userpawlogin'),
                 'changepassword' => Yii::app()->createAbsoluteUrl('/apimd/changepassword'),
-                'userregister' => Yii::app()->createAbsoluteUrl('/apimd/userregister')
+                'userregister' => Yii::app()->createAbsoluteUrl('/apimd/userregister'),
+                'contractdoctor' => Yii::app()->createAbsoluteUrl('/apimd/contractdoctor'),
+                'findView' => 'http://192.168.2.126/md2.myzd.com/mobiledoctor/home/page/view/findView',
+                'city' => Yii::app()->createAbsoluteUrl('/apimd/city'),
+                'indexannouncement' => Yii::app()->createAbsoluteUrl('/apimd/indexannouncement'),
+                'isVerified' => Yii::app()->createAbsoluteUrl('/apimd/isVerified'),
+                'orderview' => Yii::app()->createAbsoluteUrl('/apimd/orderview'),
+                'doctoropinion' => Yii::app()->createAbsoluteUrl('/apimd/doctoropinion'),
+                'dataversion' => Yii::app()->createAbsoluteUrl('/apimd/dataversion'),
+                'diseasecategory' => Yii::app()->createAbsoluteUrl('/apimd/diseasecategory')
             );
 
             $this->output = array(

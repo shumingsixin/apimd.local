@@ -176,7 +176,6 @@ class AuthManager {
     public function apiTokenDoctorLoginByPaw($values) {
         $mobile = $values['username'];
         $password = $values['password'];
-
         if (!User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
             // error, so return errors.
             $output['status'] = EApiViewService::RESPONSE_NO;

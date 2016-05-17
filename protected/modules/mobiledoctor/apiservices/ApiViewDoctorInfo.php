@@ -59,7 +59,7 @@ class ApiViewDoctorInfo extends EApiViewService {
         if ($model->isVerified()) {
             $data->isVerified = '已认证';
         } else {
-            $data->isVerified = '未认证';
+            $data->isVerified = '认证中';
         }
         $data->stateName = $model->getStateName();    //省会
         $data->cityName = $model->getCityName();
