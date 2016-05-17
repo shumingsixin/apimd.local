@@ -282,6 +282,13 @@ class ApimdController extends Controller {
                 $output = $this->encryptOutput($apiSvc->loadApiViewData());
                 //print_r(json_decode(json_encode($output),true));
                 break;
+            case 'orderpayment'://预约单支付列表
+                $values = $_GET;
+                if (count($values) > 1) {
+                    $apiService = new ApiViewOrderPayment($values);
+                    $output = $apiService->loadApiViewData();
+                }
+                break;
             default:
                 $this->_sendResponse(501, sprintf('Mode <b>view</b> is not implemented for model <b>%s</b>', $model));
                 Yii::app()->end();

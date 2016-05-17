@@ -45,14 +45,19 @@ class ApiViewDoctorVerified extends EApiViewService {
             $with = null;
             $doctorProflie = $this->userMgr->loadUserDoctorProflieByUserId($this->userId, $attributes, $with);
             $doctorFiles = $this->userMgr->loadUserDoctorFilesByUserId($this->userId, $attributes, $with);
-            if($doctorProflie->date_verified !== null){
-                $this->doctorVerified = "已认证";
-            }
-            elseif($doctorProflie->date_verified == null && $doctorFiles[0]->file_url == null){
-                $this->doctorVerified = "未认证";
+            if(arrayNotEmpty($doctorProflie)){
+                if($doctorProflie->date_verified !== null){
+                    $this->doctorVerified['isVerified'] = "已认证";
+                }
+                elseif($doctorProflie->date_verified == null && $doctorFiles[0]->file_url == null){
+                    $this->doctorVerified['isVerified'] = "未认证";
+                }
+                else{
+                    $this->doctorVerified['isVerified'] = "认证中";
+                }
             }
             else{
-                $this->doctorVerified = "认证中";
+                $this->doctorVerified['isVerified'] = "未认证";
             }
             //echo $doctorVerified;exit;
     }
