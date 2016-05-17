@@ -54,12 +54,12 @@ class ApiViewOrderPayment extends EApiViewService {
             $data->paymentStatus = $array['payment_status'];
             $data->billAmount = (string)$array['bill_amount'];
             $this->orderPayment[] = $data;
-            $this->totalAmount = (string)$this->totalAmount+$array['bill_amount'];
+            $this->totalAmount = (string)($this->totalAmount+$array['bill_amount']);
             if($array['payment_status']=='0'){
-                $this->havePay = (string)$this->havePay+$array['bill_amount'];
+                $this->havePay = (string)($this->havePay+$array['bill_amount']);
             }
             else{
-                $this->notPay = (string)$this->notPay+$array['bill_amount'];
+                $this->notPay = (string)($this->notPay+$array['bill_amount']);
             }
         }
     }
