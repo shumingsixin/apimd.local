@@ -693,9 +693,9 @@ class DoctorManager {
             $booking->setDoctorOpinion($opinion);
             if ($booking->update(array('doctor_accept', 'doctor_opinion'))) {
                 //医生评价成功 调用crm接口修改admin_booking的接口
-                //$urlMgr = new ApiRequestUrl();
-                // $url = $urlMgr->getUrlDoctorAccept() . "?id={$id}&type={$type}&accept={$accept}&option={$option}";
-                $url = "http://192.168.31.118/admin/api/doctoraccept?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+                $urlMgr = new ApiRequestUrl();
+                 $url = $urlMgr->getUrlDoctorAccept() . "?id={$id}&type={$type}&accept={$accept}&option={$option}";
+                //$url = "http://192.168.31.118/admin/api/doctoraccept?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
                 $this->send_get($url);
                 $output['status'] = EApiViewService::RESPONSE_OK;
                 $output['errorCode'] = ErrorList::ERROR_NONE;
