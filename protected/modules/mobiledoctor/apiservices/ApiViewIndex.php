@@ -70,18 +70,18 @@ class ApiViewIndex extends EApiViewService {
         $data = array(
             array(
                 'pageTitle' => '名医主刀大事记',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/bigEvent',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/bigEvent/banner.png',
+                'actionUrl' => 'http://md.mingyizhudao.com/mobiledoctor/home/page/view/bigEvent',
+                'imageUrl' => 'http://md.mingyizhudao.com/themes/md2/images/event/bigEvent/banner.png',
             ),
             array(
                 'pageTitle' => '名医主刀入选50强榜单',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/newList',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/newList/banner.png',
+                'actionUrl' => 'http://md.mingyizhudao.com/mobiledoctor/home/page/view/newList',
+                'imageUrl' => 'http://md.mingyizhudao.com/themes/md2/images/event/newList/banner.png',
             ),
             array(
                 'pageTitle' => '达芬奇机器人',
-                'actionUrl' => 'http://mingyizhudao.com/mobiledoctor/home/page/view/robot',
-                'imageUrl' => 'http://mingyizhudao.com/themes/md2/images/event/robot/banner.jpg',
+                'actionUrl' => 'http://md.mingyizhudao.com/mobiledoctor/home/page/view/robot',
+                'imageUrl' => 'http://md.mingyizhudao.com/themes/md2/images/event/robot/banner.jpg',
             )
         );
     
@@ -115,9 +115,9 @@ class ApiViewIndex extends EApiViewService {
      * 填充首页 签约专家列表，加入名医公益，了解名医主刀URL 
      */
     private function setUrl() {
-        $this->results->publicWelfareUrl = "http://192.168.31.107/md2.myzd.com/mobiledoctor/home/page/view/mygy";
+        $this->results->publicWelfareUrl = "http://md.mingyizhudao.com/mobiledoctor/home/page/view/mygy";
         $this->results->doctorUrl = Yii::app()->createAbsoluteUrl('/apimd/contractdoctor');;
-        $this->results->joinUrl = "http://192.168.31.107/md2.myzd.com/mobiledoctor/home/page/view/myzd";
+        $this->results->joinUrl = "http://md.mingyizhudao.com/mobiledoctor/home/page/view/myzd";
     }
 }
 ?>
