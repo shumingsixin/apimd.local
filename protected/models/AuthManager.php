@@ -286,7 +286,7 @@ class AuthManager {
             $smsVerify = new AuthSmsVerify();
             $smsVerify->addError('code', AuthSmsVerify::getErrorMessage(AuthSmsVerify::ERROR_NOT_FOUND));
         } else {
-            $smsVerify->checkValidity();
+            $smsVerify->checkValidity(true, true);
         }
 
         return $smsVerify;
