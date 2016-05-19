@@ -351,8 +351,8 @@ class PatientManager {
         //print_r($model);exit;
         if ($model->save()) {
             $apiRequest = new ApiRequestUrl();
-            $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
-          //$remote_url = 'http://192.168.31.118/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
+            //$remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
+            $remote_url = 'http://192.168.1.216/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
             $ret = $this->send_get($remote_url);
             if ($ret['status'] == 'no') {
                 $output['status'] = 'no';
@@ -371,7 +371,6 @@ class PatientManager {
                     'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$model->getId()),
 //                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
                 );
-
             }
             //自动生成一张adminbooking
 //            $bookingMgr = new BookingManager();

@@ -15,7 +15,6 @@
  * @property integer $travel_type
  * @property string $date_start
  * @property string $date_end
- * @property string $expected_doctor
  * @property string $detail
  * @property integer is_deposit_paid
  * @property string $appt_date
@@ -31,17 +30,15 @@
  */
 class PatientBooking extends EActiveRecord {
 
-    const BK_STATUS_NEW = 1;         // 待处理
-    const BK_STATUS_PROCESSING = 2;   // 处理中    
-    const BK_STATUS_CONFIRMED_DOCTOR = 3;   // 已确认专家
+    const BK_STATUS_NEW = 1;         // 待支付
+    const BK_STATUS_PROCESSING = 2;   // 安排中    
+    //const BK_STATUS_CONFIRMED_DOCTOR = 3;   // 已确认专家
     //const BK_STATUS_PATIENT_ACCEPTED = 4;   // 患者已接受
-    const BK_STATUS_SERVICE_UNPAID = 5; //待确认
-    const BK_STATUS_SERVICE_PAIDED = 6; //传小结
-    const BK_STATUS_INVALID = 7;        // 失效的
-    const BK_STATUS_SURGER_DONE = 8;        // 已完成手术
-    const BK_STATUS_DC_ACCEPTED = 9;          // 已收到出院小结
-    
-    const BK_STATUS_CANCELLED = 99;   // 已取消
+    const BK_STATUS_SERVICE_UNPAID = 5;   //待确认
+    const BK_STATUS_SERVICE_PAIDED = 6;   // 上传出院小结
+    //const BK_STATUS_INVALID = 7;        // 失效的
+    const BK_STATUS_SURGER_DONE = 8;        // 已完成
+    const BK_STATUS_CANCELLED = 9;          // 已取消
 
     /**
      * @return string the associated database table name
@@ -62,13 +59,14 @@ class PatientBooking extends EActiveRecord {
             array('patient_id, creator_id, doctor_id, status, travel_type', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('user_agent, doctor_name, patient_name, creator_name', 'length', 'max' => 20),
-            array('detail', 'length', 'max' => 1000),
-            array('remark', 'length', 'max' => 500),
             array('expected_doctor', 'length', 'max' => 200),
-            array('appt_date, date_confirm, date_created, date_updated, date_deleted', 'safe'),
+            array('expected_dept, expected_hospital', 'length', 'max' => 200),
+            array('detail', 'length', 'max' => 1000),
+            array('remark, cs_explain, doctor_opinion', 'length', 'max' => 500),
+            array('expected_dept, expected_hospital, expected_doctor, appt_date, date_confirm, date_created, date_updated, date_deleted, date_start, date_end', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
-            array('id, ref_no, patient_id, patient_name, doctor_id, doctor_name, creator_id, creator_name, status, travel_type, date_start, date_end, expected_doctor, detail, appt_date, date_confirm, remark, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
+            array('id, ref_no, patient_id, patient_name, doctor_id, doctor_name, creator_id, creator_name, status, travel_type, date_start, date_end, detail, appt_date, date_confirm, remark, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
         );
     }
 
@@ -175,10 +173,11 @@ class PatientBooking extends EActiveRecord {
 
     //查询创建者旗下所有的患者
     public function getAllByCreatorId($creatorId, $status, $attributes = '*', $with = null, $options = null) {
-        if($status=='0')
-            $array=array('t.creator_id' => $creatorId);
-        else
-            $array=array('t.creator_id' => $creatorId,'t.status' => $status);
+        if ($status == '0') {
+            $array = array('t.creator_id' => $creatorId);
+        } else {
+            $array = array('t.creator_id' => $creatorId, 't.status' => $status);
+        }
         return $this->getAllByAttributes($array, $with, $options);
     }
 
@@ -253,31 +252,23 @@ class PatientBooking extends EActiveRecord {
     public function getPatientName() {
         return $this->patient_name;
     }
-    
-    public function getExpectedDoctor() {
-        return $this->expected_doctor;
-    }
-    
+
     public function getDoctorName() {
         return $this->doctor_name;
     }
     
-    public function getCsExplain(){
-        return $this->cs_explain;
-    }
 
     public function getOptionsBkStatus() {
         return array(
             self::BK_STATUS_NEW => '待支付',
             self::BK_STATUS_PROCESSING => '安排中',
-            self::BK_STATUS_CONFIRMED_DOCTOR => '已确认专家',
-            //self::BK_STATUS_PATIENT_ACCEPTED => '患者已接受',
+            //self::BK_STATUS_CONFIRMED_DOCTOR => '已确认专家',
+            //    self::BK_STATUS_PATIENT_ACCEPTED => '患者已接受',
             self::BK_STATUS_SERVICE_UNPAID => '待确认',
             self::BK_STATUS_SERVICE_PAIDED => '传小结',
             self::BK_STATUS_SURGER_DONE => '已完成',
-            self::BK_STATUS_DC_ACCEPTED => '收到出院小结',
             self::BK_STATUS_CANCELLED => '已取消',
-            self::BK_STATUS_INVALID => '失效的'
+                //self::BK_STATUS_INVALID => '失效的'
         );
     }
 
@@ -291,6 +282,26 @@ class PatientBooking extends EActiveRecord {
             }
         } else {
             return $this->status;
+        }
+    }
+
+    public function getTitleBkStatus() {
+        return array(
+            self::BK_STATUS_NEW => '请您支付手术预约金',
+            self::BK_STATUS_PROCESSING => '当前状态:安排专家中',
+            self::BK_STATUS_SERVICE_UNPAID => '当前状态:待支付平台咨询费',
+            self::BK_STATUS_SERVICE_PAIDED => '当前状态:待上传出院小结',
+            self::BK_STATUS_SURGER_DONE => '感谢你协助完成了该例手术!',
+            self::BK_STATUS_CANCELLED => '当前状态：预约已取消',
+        );
+    }
+
+    public function getStatusTitle() {
+        $options = self::getTitleBkStatus();
+        if (isset($options[$this->status])) {
+            return $options[$this->status];
+        } else {
+            return StatCode::ERROR_UNKNOWN;
         }
     }
 
@@ -326,6 +337,18 @@ class PatientBooking extends EActiveRecord {
         return $this->getTextAttribute($this->remark, $ntext);
     }
 
+    public function getDoctorAccept() {
+        return $this->doctor_accept;
+    }
+
+    public function getDoctorOpinion($ntext = true) {
+        return $this->getTextAttribute($this->doctor_opinion, $ntext);
+    }
+
+    public function getCsExplain($ntext = true) {
+        return $this->getTextAttribute($this->cs_explain, $ntext);
+    }
+
     public function getIsDepositPaid($text = false) {
         if ($text) {
             return StatCode::getPaymentStatus($this->is_deposit_paid);
@@ -336,6 +359,10 @@ class PatientBooking extends EActiveRecord {
 
     public function getUserAgent() {
         return $this->user_agent;
+    }
+
+    public function getExpectedDoctor() {
+        return $this->expected_doctor;
     }
 
     public function setStatus($v) {
@@ -365,26 +392,15 @@ class PatientBooking extends EActiveRecord {
     public function setDoctorName($v) {
         $this->doctor_name = $v;
     }
-    
-    public function getTitleBkStatus() {
-        return array(
-            self::BK_STATUS_NEW => '请您支付手术预约金',
-            self::BK_STATUS_PROCESSING => '当前状态:安排专家中',
-            self::BK_STATUS_SERVICE_UNPAID => '当前状态:待支付平台咨询费',
-            self::BK_STATUS_SERVICE_PAIDED => '当前状态:待上传出院小结',
-            self::BK_STATUS_SURGER_DONE => '感谢你协助完成了该例手术!',
-        );
+
+    public function setDoctorAccept($v) {
+        $this->doctor_accept = $v;
     }
-    
-    public function getStatusTitle() {
-        $options = self::getTitleBkStatus();
-        if (isset($options[$this->status])) {
-            return $options[$this->status];
-        } else {
-            return StatCode::ERROR_UNKNOWN;
-        }
+
+    public function setDoctorOpinion($v) {
+        $this->doctor_opinion = $v;
     }
-    
+
     /*     * ****** Private Methods ******* */
 
     private function createRefNumber() {
@@ -400,19 +416,5 @@ class PatientBooking extends EActiveRecord {
         }
     }
     
-    public function setDoctorAccept($v) {
-        $this->doctor_accept = $v;
-    }
     
-    public function setDoctorOpinion($v) {
-        $this->doctor_opinion = $v;
-    }
-    
-    public function getDoctorAccept(){
-        return $this->doctor_accept;
-    }
-    
-    public function getDoctorOpinion(){
-        return $this->doctor_opinion;
-    }
 }
