@@ -31,7 +31,7 @@ class MobiledoctorModule extends CWebModule {
             ),
                 ), true);
 
-        $this->setTheme('md2');
+        //$this->setTheme('md2');
         $this->defaultController = 'doctor';
     }
 
