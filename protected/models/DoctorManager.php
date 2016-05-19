@@ -419,7 +419,20 @@ class DoctorManager {
     public function apiCreateProfile(User $user, $values, $id = null) {
         $userId = $user->getId();
         $model = UserDoctorProfile::model()->getByUserId($userId);
-        if (isset($model) == false) {
+        if (isset($id)) {
+            if (is_null($model)) {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                $output['errorMsg'] = '您没有权限执行此操作';
+                return $output;
+            }
+        } else {
+            if (is_object($model)) {
+                $output['status'] = EApiViewService::RESPONSE_NO;
+                $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                $output['errorMsg'] = '对不起，您已存在个人信息';
+                return $output;
+            }
             $model = new UserDoctorProfile();
         }
         $model->setAttributes($values);
