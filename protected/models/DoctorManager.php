@@ -422,7 +422,6 @@ class DoctorManager {
         if (isset($model) == false) {
             $model = new UserDoctorProfile();
         }
-
         $model->setAttributes($values);
         // user_id.
         $model->user_id = $userId;
