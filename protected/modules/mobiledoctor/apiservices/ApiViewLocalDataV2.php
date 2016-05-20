@@ -48,7 +48,8 @@ class ApiViewLocalDataV2 extends EApiViewService {
                 'orderview' => Yii::app()->createAbsoluteUrl('/apimd/orderview'),
                 'doctoropinion' => Yii::app()->createAbsoluteUrl('/apimd/doctoropinion'),
                 'dataversion' => Yii::app()->createAbsoluteUrl('/apimd/dataversion'),
-                'diseasecategory' => Yii::app()->createAbsoluteUrl('/apimd/diseasecategory')
+                'diseasecategory' => Yii::app()->createAbsoluteUrl('/apimd/diseasecategory'),
+                'forgetpassword' => Yii::app()->createAbsoluteUrl('/apimd/forgetpassword')
             );
 
             $this->output = array(
