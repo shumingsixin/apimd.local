@@ -644,7 +644,7 @@ class DoctorManager {
     /**
      * api 忘记密码
      */
-    public function apiForgetPassword($mobile, $smsCode, $newPass, $userId, $userIp) {
+    public function apiForgetPassword($mobile, $smsCode, $newPass, $userIp) {
         $authM = new AuthManager();
         $authSmsVerify = $authM->verifyCodeForPasswordReset($mobile, $smsCode, $userIp);
         if ($authSmsVerify->isValid() === false) {
@@ -654,7 +654,7 @@ class DoctorManager {
         } else {
             $model = User::model()->getByUsername($mobile);
             $newEncryptPass = $model->encryptPassword($newPass);
-            $model->find('id=:id and  username=:username', array(":id" => $userId, ":username" => $mobile));
+            $model->find('username=:username', array(":username" => $mobile));
             $model->password_raw = $newPass;
             $model->password = $newEncryptPass;
             if ($model->save()) {
