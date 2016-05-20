@@ -652,9 +652,10 @@ class DoctorManager {
             $output['errorMsg'] = $authSmsVerify->getError('code');
             return $output;
         } else {
-            $model = User::model()->getByUsername($mobile);
+            $model = User::model()->getByUsernameAndRole($mobile,StatCode::USER_ROLE_DOCTOR);
+            $userId=$model->getId();
             $newEncryptPass = $model->encryptPassword($newPass);
-            $model->find('username=:username', array(":username" => $mobile));
+            $model->find('id=:id and  username=:username', array(":id" => $userId, ":username" => $mobile));
             $model->password_raw = $newPass;
             $model->password = $newEncryptPass;
             if ($model->save()) {
