@@ -75,7 +75,7 @@ class ApiViewBookOrder extends EApiViewService {
         $data->travelType = $model->getTravelType();
         $data->detail = $model->getDetail(false);
         $data->dateCreated = $model->getDateCreated('Y-m-d h:i:s');
-        $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/payorders/'.$model->getId());
+        $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/payorders/'.$model->getId()."?ordertype=2");
         $this->bookingInfo = $data;
         $this->status = $model->getStatus(false);
     }
