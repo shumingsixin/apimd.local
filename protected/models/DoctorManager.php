@@ -648,6 +648,7 @@ class DoctorManager {
         $authM = new AuthManager();
         $authSmsVerify = $authM->verifyCodeForPasswordReset($mobile, $smsCode, $userIp);
         if ($authSmsVerify->isValid() === false) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
             $output['errorCode'] = ErrorList::NOT_FOUND;
             $output['errorMsg'] = $authSmsVerify->getError('code');
             return $output;
