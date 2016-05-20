@@ -351,27 +351,33 @@ class PatientManager {
         //print_r($model);exit;
         if ($model->save()) {
             $apiRequest = new ApiRequestUrl();
-            //$remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
-            $remote_url = 'http://192.168.1.216/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
+            $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
+            //$remote_url = 'http://192.168.1.216/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
             $ret = $this->send_get($remote_url);
-            if ($ret['status'] == 'no') {
-                $output['status'] = 'no';
-                $output['errorCode'] = 400;
-                $output['errorMsg'] = $model->getFirstErrors();
-                return $output;
-            }else{
-                //发送提示短信
-                $this->sendSmsToCreator($user, $model);
-                $output['status'] = 'ok';
-                $output['errorCode'] = ErrorList::ERROR_NONE;
-                $output['errorMsg'] = 'success';
-                $output['results'] = array(
-                    'bookingId' => $model->getId(),
-                    'refNo'=>$ret['salesOrderRefNo'],
-                    'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$model->getId()),
-//                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
-                );
-            }
+            if(isset($ret)){
+                if ($ret['status'] == 'no') {
+                    $output['status'] = 'no';
+                    $output['errorCode'] = 400;
+                    $output['errorMsg'] = $model->getFirstErrors();
+                    return $output;
+                }else{
+                    //发送提示短信
+                    $this->sendSmsToCreator($user, $model);
+                    $output['status'] = 'ok';
+                    $output['errorCode'] = ErrorList::ERROR_NONE;
+                    $output['errorMsg'] = 'success';
+                    $output['results'] = array(
+                        'bookingId' => $model->getId(),
+                        'refNo'=>$ret['salesOrderRefNo'],
+                        'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$model->getId()),
+    //                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
+                    );
+                }
+             }else{
+                 $output['status'] = EApiViewService::RESPONSE_NO;
+                 $output['errorCode'] = ErrorList::UNAUTHORIZED;
+                 $output['errorMsg'] = '返回数据为空';
+             }
             //自动生成一张adminbooking
 //            $bookingMgr = new BookingManager();
 //            $adminBooking = $bookingMgr->createAdminBooking($model);
