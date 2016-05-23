@@ -75,7 +75,8 @@ class ApiViewBookOrder extends EApiViewService {
         $data->travelType = $model->getTravelType();
         $data->detail = $model->getDetail(false);
         $data->dateCreated = $model->getDateCreated('Y-m-d h:i:s');
-        $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/payorders/'.$model->getId()."?ordertype=2");
+        $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/patientbookingview/'.$model->getPatientId());
+        $data->payUrl = Yii::app()->createAbsoluteUrl('/apimd/payorders/'.$model->getId()."?ordertype=2");
         $this->bookingInfo = $data;
         $this->status = $model->getStatus(false);
     }
@@ -83,6 +84,8 @@ class ApiViewBookOrder extends EApiViewService {
     private function setOrder($models) {
         $needPay = 0; //剩余支付
         $payed = 0;
+        $depositPayed = 0;
+        $servicePayed = 0;
         foreach ($models as $model) {
             $data = new stdClass();
             $data->id = $model->getId();
@@ -94,7 +97,7 @@ class ApiViewBookOrder extends EApiViewService {
             $data->needPay = 0;
             $data->payed = 0;
             $data->isPaid = $model->getIsPaid();
-            if ($model->getIsPaid(false) == '0') {
+            if ($model->getIsPaid(false) == '0') {//未支付
                 if ($this->status == PatientBooking::BK_STATUS_NEW && $model->getOrderType(false) == SalesOrder::ORDER_TYPE_DEPOSIT) {
                     $needPay += $model->getFinalAmount();
                     $this->notPay = $data;
@@ -102,10 +105,13 @@ class ApiViewBookOrder extends EApiViewService {
                     $needPay += $model->getFinalAmount();
                     $this->notPay = $data;
                 }
-            } else {
+            } else {//已支付
                 $this->payList[] = $data;
                 if ($this->status == PatientBooking::BK_STATUS_SERVICE_UNPAID && $model->getOrderType(false) == SalesOrder::ORDER_TYPE_SERVICE) {
                     $payed += $model->getFinalAmount();
+                }
+                if($model->getOrderType(false) == SalesOrder::ORDER_TYPE_DEPOSIT){
+                    $depositPayed=  $model->getDateClose()."(已支付预约金".a.")";
                 }
             }
         }

@@ -214,7 +214,6 @@ class ApimdController extends Controller {
         
         switch ($model) {
             // Find respective model
-
             case 'patientinfo'://我的患者详情患者资料和就诊意向
                 $values = $_GET;
                 $user = $this->userLoginRequired($values);

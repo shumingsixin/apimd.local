@@ -26,7 +26,7 @@ class ApiViewPatientListV2 extends EApiViewService {
 
     protected function loadData() {
         // load PatientBooking by creatorId.
-        $this->loadPatientList();
+        $this->loadPatientList(); 
     }
 
     //返回的参数
@@ -93,9 +93,8 @@ class ApiViewPatientListV2 extends EApiViewService {
                     $array[]=$data;
                 }
             }
-            
         }
-        if(arrayNotEmpty($array)){
+        if(isset($array)){
             $this->results=$array;
         }
         else{
