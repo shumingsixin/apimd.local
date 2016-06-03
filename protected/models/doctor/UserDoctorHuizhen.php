@@ -35,8 +35,9 @@ class UserDoctorHuizhen extends EFileModel {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('user_id, is_join, fee_min, fee_max', 'numerical', 'integerOnly' => true),
-            array('travel_duration, week_days', 'length', 'max' => 20),
+            array('user_id, is_join, min_no_surgery, fee_min, fee_max', 'numerical', 'integerOnly' => true),
+            array('week_days', 'length', 'max' => 20),
+            array('travel_duration', 'length', 'max' => 100),
             array('patients_prefer, freq_destination, destination_req', 'length', 'max' => 500),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
@@ -64,6 +65,7 @@ class UserDoctorHuizhen extends EFileModel {
             'user_id' => 'User',
             'is_join' => 'Is Join',
             'travel_duration' => 'Travel Duration',
+            'min_no_surgery' => 'Min No Surgery',
             'fee_min' => 'Fee Min',
             'fee_max' => 'Fee Max',
             'week_days' => 'Week Days',
@@ -93,6 +95,7 @@ class UserDoctorHuizhen extends EFileModel {
         $criteria->compare('id', $this->id);
         $criteria->compare('user_id', $this->user_id);
         $criteria->compare('is_join', $this->is_join);
+        $criteria->compare('min_no_surgery', $this->min_no_surgery, true);
         $criteria->compare('travel_duration', $this->travel_duration, true);
         $criteria->compare('fee_min', $this->fee_min);
         $criteria->compare('fee_max', $this->fee_max);
@@ -141,6 +144,18 @@ class UserDoctorHuizhen extends EFileModel {
             }
         } else {
             return $this->week_days;
+        }
+    }
+
+    public function getTravelDuration($v = true) {
+        if ($v) {
+            if (strIsEmpty($this->travel_duration, true) === false) {
+                return explode(',', $this->travel_duration);
+            } else {
+                return array();
+            }
+        } else {
+            return $this->travel_duration;
         }
     }
 

@@ -34,6 +34,17 @@ class PatientbookingController extends MobiledoctorController {
         $filterChain->run();
     }
 
+    public function filterUserContext($filterChain) {
+        $user = $this->loadUser();
+        if (is_null($user)) {
+            $redirectUrl = $this->createUrl('doctor/mobileLogin');
+            $currentUrl = $this->getCurrentRequestUrl();
+            $redirectUrl.='?returnUrl=' . $currentUrl;
+            $this->redirect($redirectUrl);
+        }
+        $filterChain->run();
+    }
+
     /**
      * @return array action filters
      */
@@ -42,7 +53,8 @@ class PatientbookingController extends MobiledoctorController {
             'accessControl', // perform access control for CRUD operations
             'postOnly + delete', // we only allow deletion via POST request
             'userDoctorContext + create',
-            'patientCreatorContext + create'
+            'patientCreatorContext + create',
+            'userContext + list doctorPatientBookingList'
         );
     }
 
@@ -54,11 +66,11 @@ class PatientbookingController extends MobiledoctorController {
     public function accessRules() {
         return array(
             array('allow', // allow all users to perform 'index' and 'view' actions
-                'actions' => array(''),
+                'actions' => array('list', 'doctorPatientBookingList'),
                 'users' => array('*'),
             ),
             array('allow', // allow authenticated user to perform 'create' and 'update' actions
-                'actions' => array('view', 'create', 'ajaxCreate', 'update', 'list', 'doctorPatientBookingList', 'doctorPatientBooking'),
+                'actions' => array('view', 'create', 'ajaxCreate', 'update', 'list', 'doctorPatientBookingList', 'doctorPatientBooking', 'ajaxDoctorOpinion', 'ajaxBookingNum', 'ajaxOperation'),
                 'users' => array('@'),
             ),
             array('deny', // deny all users
@@ -67,9 +79,36 @@ class PatientbookingController extends MobiledoctorController {
         );
     }
 
+    //异步提交上级医生反馈
+    public function actionAjaxDoctorOpinion($id, $type, $accept, $opinion) {
+        $output = array('status' => 'no');
+        $userId = $this->getCurrentUserId();
+        if ($type == StatCode::TRANS_TYPE_PB) {
+            $booking = PatientBooking::model()->getByAttributes(array('doctor_id' => $userId, 'id' => $id));
+        } else {
+            $booking = Booking::model()->getByIdAndDoctorUserId($id, $userId);
+        }
+        if (isset($booking)) {
+            $booking->setDoctorAccept($accept);
+            $booking->setDoctorOpinion($opinion);
+            if ($booking->update(array('doctor_accept', 'doctor_opinion'))) {
+                //医生评价成功 调用crm接口修改admin_booking的接口
+                $urlMgr = new ApiRequestUrl();
+                $url = $urlMgr->getUrlDoctorAccept() . "?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+//                $url = "http://192.168.31.119/admin/api/doctoraccept?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+                $this->send_get($url);
+                $output['status'] = 'ok';
+                $output['id'] = $booking->getId();
+            } else {
+                $output['errors'] = $booking->getErrors();
+            }
+        } else {
+            $output['errors'] = 'no data..';
+        }
+        $this->renderJsonOutput($output);
+    }
+
     public function actionView($id) {
-        //    echo 'View Patient Booking - ' . $id;
-        //    $booking = $this->model;
         $userId = $this->getCurrentUserId();
         $apiSvc = new ApiViewPatientBooking($id, $userId);
         $output = $apiSvc->loadApiViewData();
@@ -78,25 +117,36 @@ class PatientbookingController extends MobiledoctorController {
         ));
     }
 
-    //查询创建者的签约信息
-    public function actionList($page = 1) {
-        //$this->headerUTF8();
-        //是否手机app
-        $json = false;
+    //各类订单数量
+    public function actionAjaxBookingNum() {
         $userId = $this->getCurrentUserId();
-        $pagesize = 100;
+        $apisvc = new ApiViewBookingCount($userId);
+        $output = $apisvc->loadApiViewData();
+        $this->renderJsonOutput($output);
+    }
+
+    //查询创建者的签约信息
+    public function actionList($page = 1, $status = 0) {
+        $user = $this->loadUser();
+        $userId = $user->getId();
+        $doctorProfile = $user->getUserDoctorProfile();
+        $teamDoctor = 0;
+        if (isset($doctorProfile)) {
+            if ($doctorProfile->isVerified()) {
+                if ($doctorProfile->isTermsDoctor() === false) {
+                    $teamDoctor = 1;
+                }
+            }
+        }
+        $pagesize = 200;
         //service层
-        $apisvc = new ApiViewDoctorPatientBookingList($userId, $pagesize, $page);
+        $apisvc = new ApiViewDoctorPatientBookingList($userId, $status, $pagesize, $page);
         //调用父类方法将数据返回
         $output = $apisvc->loadApiViewData();
         $dataCount = $apisvc->loadCount();
-        if ($json) {
-            $this->renderJsonOutput($output);
-        } else {
-            $this->render('bookinglist', array(
-                'data' => $output, 'dataCount' => $dataCount
-            ));
-        }
+        $this->render('bookinglist', array(
+            'data' => $output, 'dataCount' => $dataCount, 'teamDoctor' => $teamDoctor
+        ));
     }
 
     //查询预约该医生的预约列表
@@ -106,23 +156,57 @@ class PatientbookingController extends MobiledoctorController {
         $apisvc = new ApiViewPatientBookingListForDoctor($doctorId, $pagesize, $page);
         //调用父类方法将数据返回
         $output = $apisvc->loadApiViewData();
-        $dataCount = $apisvc->loadCount();
         $this->render('doctorPatientBookingList', array(
-            'data' => $output, 'dataCount' => $dataCount
+            'data' => $output
         ));
     }
 
     //查询该医生的预约详情
-    public function actionDoctorPatientBooking($id) {
+    public function actionDoctorPatientBooking($id, $type = StatCode::TRANS_TYPE_PB) {
         $doctorId = $this->getCurrentUserId();
-        $apiSvc = new ApiViewPatientBookingForDoctor($id, $doctorId);
+        $apiSvc = new ApiViewPatientBookingForDoctor($id, $doctorId, $type);
         $output = $apiSvc->loadApiViewData();
         $this->render('doctorPatientBookingView', array(
             'data' => $output
         ));
     }
 
+    //下级医生确认手术完成
+    public function actionAjaxOperation($id) {
+        $output = array('status' => 'no');
+        $userId = $this->getCurrentUserId();
+        $booking = PatientBooking::model()->getByIdAndCreatorId($id, $userId);
+        if (isset($booking)) {
+            $booking->operation_finished = StatCode::OPERATION_FINISHED;
+            if ($booking->update(array('operation_finished'))) {
+                //远程调用接口
+                $apiRequest = new ApiRequestUrl();
+                //$url = 'http://192.168.1.216/admin/api/operationfinished?id={$id}';
+                $url = $apiRequest->getUrlFinished() . "?id=" . $id;
+                $this->send_get($url);
+                $output['status'] = 'ok';
+            } else {
+                $output["errors"] = $booking->getErrors();
+            }
+        } else {
+            $output["errors"] = 'no data...';
+        }
+        $this->renderJsonOutput($output);
+    }
+
     public function actionCreate() {
+        $user = $this->getCurrentUser();
+        $doctorProfile = $user->getUserDoctorProfile();
+        $userMgr = new UserManager();
+        $certs = $userMgr->loadUserDoctorFilesByUserId($user->id);
+        $doctorCerts = 0;
+        if (arrayNotEmpty($certs)) {
+            $doctorCerts = 1;
+        }
+        $userDoctorProfile = 0;
+        if (isset($doctorProfile)) {
+            $userDoctorProfile = 1;
+        }
         $patient = $this->patient;
         $form = new PatientBookingForm();
         $form->initModel();
@@ -134,14 +218,18 @@ class PatientbookingController extends MobiledoctorController {
         }
         $form->setPatientId($patient->getId());
         $this->render('create', array(
-            'model' => $form
+            'model' => $form,
+            'userDoctorProfile' => $userDoctorProfile,
+            'doctorCerts' => $doctorCerts
         ));
     }
 
     public function actionAjaxCreate() {
+        $post = $this->decryptInput();
         $output = array('status' => 'no');
-        if (isset($_POST['booking'])) {
-            $values = $_POST['booking'];
+        $bookingDB = null;
+        if (isset($post['booking'])) {
+            $values = $post['booking'];
             $patientId = null;
             $patientName = null;
             $patientMgr = new PatientManager();
@@ -179,23 +267,26 @@ class PatientbookingController extends MobiledoctorController {
                     $output['errors'] = $patientBooking->getErrors();
                     throw new CException('error saving data.');
                 }
-                //预约单保存成功  生成一张支付单
-                $orderMgr = new OrderManager();
-                $salesOrder = $orderMgr->createSalesOrder($patientBooking);
-                if ($salesOrder->hasErrors() === false) {
+                $bookingDB = $patientBooking;
+                $apiRequest = new ApiRequestUrl();
+                $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $patientBooking->id;
+                //$remote_url = 'http://localhost/admin/api/adminbooking?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $patientBooking->id;
+                $data = $this->send_get($remote_url);
+                if ($data['status'] == "ok") {
                     $output['status'] = 'ok';
-                    $output['salesOrderRefNo'] = $salesOrder->getRefNo();
+                    $output['salesOrderRefNo'] = $data['salesOrderRefNo'];
                     $output['booking']['id'] = $patientBooking->getId();
                     $output['booking']['patientId'] = $patientBooking->getPatientId();
                     //发送提示短信
                     $this->sendSmsToCreator($patientBooking);
                 } else {
-                    $output['errors'] = $salesOrder->getErrors();
                     throw new CException('error saving data.');
                 }
             } catch (CException $cex) {
                 $output['status'] = 'no';
-                //$output['error'] = 'invalid request';
+                if (isset($bookingDB)) {
+                    $bookingDB->delete(true);
+                }
             }
         }
         $this->renderJsonOutput($output);
@@ -207,8 +298,6 @@ class PatientbookingController extends MobiledoctorController {
         $model->refNo = $book->getRefNo();
         $model->id = $book->getId();
         $model->bk_type = StatCode::TRANS_TYPE_PB;
-        //$model->bkType = 'PatientBooking';
-
         $model->user_id = $book->creator_id;
         if ($book->getTravelType(false) == StatCode::BK_TRAVELTYPE_PATIENT_GO) {
             $model->subject = '预约金';

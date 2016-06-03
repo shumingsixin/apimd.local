@@ -49,7 +49,6 @@ class DiseaseCategory extends EActiveRecord {
         // class name for the relations automatically generated below.
         return array(
             'dcDiseases' => array(self::HAS_MANY, 'Disease', 'category_id'),
-//            'dcCategoryDiseaseJion' => array(self::HAS_MANY, 'CategoryDiseaseJion', 'sub_cat_id'),
         );
     }
 
@@ -115,10 +114,6 @@ class DiseaseCategory extends EActiveRecord {
     /*     * ******　Accessors ******* */
     public function getDiseases(){
         return $this->dcDiseases;
-    }
-
-    public function getCategoryDiseaseJion(){
-        return $this->dcCategoryDiseaseJion;
     }
 
     public function getCategoryId() {

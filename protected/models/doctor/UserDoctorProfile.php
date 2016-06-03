@@ -49,7 +49,7 @@ class UserDoctorProfile extends EActiveRecord {
             array('name, hospital_name, hp_dept_name, state_name, city_name', 'length', 'max' => 50),
             array('verified_by', 'length', 'max' => 20),
             array('mobile', 'length', 'max' => 11),
-            array('date_verified, date_deleted, date_updated ,date_contracted, preferred_patient', 'safe'),
+            array('date_verified, date_deleted, date_updated ,date_contracted, preferred_patient, date_terms_doctor', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
             array('id, user_id, name, mobile, gender, hospital_id, hospital_name, hp_dept_id, hp_dept_name, clinical_title, academic_title, country_id, state_id, state_name, city_id, city_name, date_verified, verified_by, date_deleted, date_created, date_updated', 'safe', 'on' => 'search'),
@@ -291,12 +291,12 @@ class UserDoctorProfile extends EActiveRecord {
     public function getVerifiedBy() {
         return $this->verified_by;
     }
-    
-    public function getDateContracted(){
+
+    public function getDateContracted() {
         return $this->date_contracted;
     }
-    
-    public function getPreferredPatient(){
+
+    public function getPreferredPatient() {
         return $this->preferred_patient;
     }
 
@@ -330,6 +330,10 @@ class UserDoctorProfile extends EActiveRecord {
 
     public function isContractDoctor() {
         return $this->date_contracted !== null;
+    }
+
+    public function isTermsDoctor() {
+        return $this->date_terms_doctor !== null;
     }
 
 }

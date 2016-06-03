@@ -67,14 +67,15 @@ class Doctor extends EActiveRecord {
         return array(
             array('name, fullname, medical_title', 'required'),
             array('hospital_id, hp_dept_id, gender, role, display_order, state_id, city_id', 'numerical', 'integerOnly' => true),
-            array('name, fullname, hospital_name,hp_dept_name, faculty, medical_title, academic_title, password_raw, wechat, tel', 'length', 'max' => 45),
+            array('name, fullname, hospital_name, hp_dept_name, faculty, medical_title, academic_title, password_raw, wechat, tel', 'length', 'max' => 45),
             array('mobile', 'length', 'max' => 11),
             array('disease_specialty, surgery_specialty,specialty, avatar_url', 'length', 'max' => 200),
             array('description', 'length', 'max' => 500),
             array('email, search_keywords', 'length', 'max' => 100),
             array('password', 'length', 'max' => 64),
             array('salt', 'length', 'max' => 40),
-//            array('honour', 'length', 'max' => 800),
+//            array('honour', 'length', 'max' => 1500),
+//            array('career_exp', 'length', 'max' => 1000),
             array('date_activated, date_verified, last_login_time, date_created, date_updated, date_deleted', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
@@ -128,6 +129,7 @@ class Doctor extends EActiveRecord {
             'surgery_specialty' => Yii::t('doctor', '擅长手术'),
             'specialty' => Yii::t('doctor', '关联疾病'),
             'search_keywords' => Yii::t('doctor', '搜索关键词'),
+            'career_exp' => Yii::t('doctor', '执业经历'),
             'description' => Yii::t('doctor', '擅长描述'),
             'role' => Yii::t('doctor', '角色'),
             'honour' => Yii::t('doctor', '荣誉'),
@@ -213,18 +215,19 @@ class Doctor extends EActiveRecord {
 
     public function afterFind() {
         // convert json string to array.
-//        $this->honour = CJSON::decode($this->honour);
-        $this->honour = isset($this->honour) ? explode('#', $this->honour) : null;
+        if (!is_null($this->honour)) {
+            $this->honour = explode('#', $this->honour);
+        }
         return parent::afterFind();
     }
 
-    public function beforeSave() {
-        if (is_array($this->honour)) {
-            // convert array to json string.
-            $this->honour = CJSON::encode($this->honour);
-        }
-        return parent::beforeSave();
-    }
+//    public function beforeSave() {
+//        if (is_array($this->honour)) {
+//            // convert array to json string.
+//            $this->honour = CJSON::encode($this->honour);
+//        }
+//        return parent::beforeSave();
+//    }
 
     /*     * ****** Public Methods ******* */
 
@@ -264,85 +267,30 @@ class Doctor extends EActiveRecord {
         return ($ret);
     }
 
-    /*     * ****** Query Methods ******* */
-
-    public function getAllByFacultyId($id, $with = null, $options = null) {
-        return array();
-    }
-
-    public function getAllByHpDeptId($deptId, $with = null, $options = null) {
+    public function getByDoctorId($doctor_id) {
         $criteria = new CDbCriteria;
-        $criteria->select = 't.*';
-        $criteria->distinct = FALSE;
-        $criteria->join = 'left join hospital_dept_doctor_join j on (t.`id`=j.`doctor_id`)';
-        if (isset($with)) {
-            $criteria->with = $with;
-        }
-        $criteria->addCondition("j.hp_dept_id=:deptId");
-        $criteria->params[":deptId"] = $deptId;
-        $criteria->order = "j.`display_order` ASC";
-        if (isset($options['offset'])) {
-            $criteria->offset = $options['offset'];
-            $criteria->limit = 10;  // limit must be defined if offset is applied.
-        }
-        if (isset($options['limit'])) {
-            $criteria->limit = $options['limit'];
-        }
-        return $this->findAll($criteria);
+        $criteria->addCondition('t.date_deleted is NULL');
+        $criteria->compare('doctor_id', $doctor_id);
+        $criteria->limit = 1;
+        return $this->find($criteria);
     }
 
-    public function getAllByDiseaseId($diseaseId, $with = null, $options = null) {
+    public function getByDiseaseId($diseaseId, $doctor_id) {
         $criteria = new CDbCriteria;
-        $criteria->select = 't.*';
-        $criteria->distinct = FALSE;
-        $criteria->join = 'left join disease_doctor_join j on (t.`id`=j.`doctor_id`)';
-        if (isset($with)) {
-            $criteria->with = $with;
-        }
-        $criteria->addCondition("j.disease_id=:disId");
-        $criteria->params[":disId"] = $diseaseId;
-        $criteria->order = "j.`display_order` ASC";
-        if (isset($options['offset'])) {
-            $criteria->offset = $options['offset'];
-            $criteria->limit = 10;    // limit must be defined if offset is applied.
-        }
-        if (isset($options['limit'])) {
-            $criteria->limit = $options['limit'];
-        }
-
-        return $this->findAll($criteria);
-    }
-
-    public function getAllByHospitalId($hid, $with = null, $options = null) {
-        return $this->getAllByAttributes(array('hospital_id' => $hid), $with, $options);
-    }
-
-    public function getAllByDiseaseIdAndHospitalId($disId, $hpId, $with = null, $options = null) {
-        $criteria = new CDbCriteria;
-        $criteria->select = 't.*';
-        $criteria->distinct = FALSE;
-        $criteria->join = 'left join disease_doctor_join j on (t.`id`=j.`doctor_id`)';
-        if (isset($with)) {
-            $criteria->with = $with;
-        }
-        $criteria->addCondition("j.disease_id = :diseaseId");
-        $criteria->addCondition("t.hospital_id = :hospitalId");
-        $criteria->params[":diseaseId"] = $disId;
-        $criteria->params[":hospitalId"] = $hpId;
-        $criteria->order = "j.`display_order` ASC";
-        if (isset($options['offset'])) {
-            $criteria->offset = $options['offset'];
-            $criteria->limit = 10;    // limit must be defined if offset is applied.
-        }
-        if (isset($options['limit'])) {
-            $criteria->limit = $options['limit'];
-        }
+        $criteria->join = 'left join disease_doctor_join b on (t.`id`=b.`doctor_id`)';
+        $criteria->addCondition('t.date_deleted is NULL');
+        $criteria->addNotInCondition('doctor_id', array($doctor_id));
+        $criteria->compare('b.disease_id', $diseaseId);
+        $criteria->limit = 3;
         return $this->findAll($criteria);
     }
 
     /*     * ****** Display Methods ******* */
 
     public function getAbsUrlAvatar($thumbnail = false) {
+        if ($this->has_remote == 1) {
+            return $this->remote_domain . $this->remote_file_key;
+        }
         if (isset($this->avatar_url) && $this->avatar_url != '') {
             $url = $this->avatar_url;
             if (strStartsWith($url, 'http')) {
@@ -379,7 +327,7 @@ class Doctor extends EActiveRecord {
          *  
          */
     }
-    
+
     public function getOptionsMedicalTitle() {
         return array(
             self::M_TITLE_ZHUREN => '主任医师',
@@ -570,12 +518,12 @@ class Doctor extends EActiveRecord {
         return isset($this->expteam_id) ? 1 : 0;
     }
 
-    public function getCareerExp() {
-        return $this->career_exp;
-    }
-
     public function getExpteamId() {
         return $this->expteam_id;
+    }
+
+    public function getCareerExp() {
+        return $this->career_exp;
     }
 
     public function getFileUploadRootPath() {

@@ -17,15 +17,19 @@ class StatCode {
     const BK_TYPE_QUICKBOOK = 9;    // 快速预约
     const BK_TRAVELTYPE_PATIENT_GO = 1;    // 患者过去
     const BK_TRAVELTYPE_DOCTOR_COME = 2;   // 医生过来
-    const BK_STATUS_NEW = 1;         // 待支付
-    const BK_STATUS_PROCESSING = 2;   // 安排中
+    const BK_STATUS_NEW = 1;         // 待处理(支付费用)
+    const BK_STATUS_PROCESSING = 2;   // 处理中（安排中）
     const BK_STATUS_CONFIRMED_DOCTOR = 3;   // 已确认专家
     const BK_STATUS_PATIENT_ACCEPTED = 4;   // 患者已接受
-    const BK_STATUS_SERVICE_UNPAID = 5;   //待确认
-    const BK_STATUS_SERVICE_PAIDED = 6;   // 上传出院小结
-    const BK_STATUS_INVALID = 7;      // 失效的
+    const BK_STATUS_SERVICE_UNPAID = 5;      // 待支付服务费（确定手术时间）
+    const BK_STATUS_SERVICE_PAIDED = 6;      // 已支付服务费（入院手术）上传出院小结
+    //const BK_STATUS_PROCESS_DONE = 7;   // 跟进结束
     const BK_STATUS_DONE = 8;         // 已完成
     const BK_STATUS_CANCELLED = 9;   // 已取消
+    //const BK_STATUS_INVALID = 0;      // 失效的
+    const BK_STATUS_PROCESS_DONE = 11;         // 跟进结束（提交出院小结）
+    const BK_STATUS_CHECKOUT = 12;   // 已结账（返款）
+    const BK_STATUS_INVALID = 13;   // 失效的
     const DR_C_TITLE_ZHUREN = 1;        // 主任
     const DR_C_TITLE_ZHUREN_ASSOC = 2;  // 副主任
     const DR_C_TITLE_ZHUZHI = 3;        // 主治
@@ -35,6 +39,7 @@ class StatCode {
     const DR_A_TITLE_NONE = 9;          // 无    
     const TRAN_STATUS_UNPAID = 0;
     const TRAN_STATUS_PAID = 1;
+    const TRANS_TYPE_AB = 0;          // booking.
     const TRANS_TYPE_BK = 1;          // booking.
     const TRANS_TYPE_PB = 2;          // patient_booking.
     const PAY_UNPAID = 0;           //未支付
@@ -42,15 +47,23 @@ class StatCode {
     const PAY_FAIL = 2;             //支付失败
     const MR_REPORTTYPE_MR = 'mr';    // 病历  Medical Record - PatientMRFile.reprot_type
     const MR_REPORTTYPE_DA = 'dc';    // 出院小结  Discharge Certificate - PatientMRFile.reprot_type
-    const USER_AGENT_WEBSITE='website';
+    const USER_AGENT_WEBSITE = 'website';
     const USER_AGENT_WEIXIN = 'weixin';  //预约来源为微信
     const USER_AGENT_MOBILEWEB = 'wap'; // 手机网站
     const USER_AGENT_APP_ANDROID = 'android';
     const USER_AGENT_APP_IOS = 'ios';
-    const APP_NAME_MYZD='myzd'; // 患者版
-    const APP_NAME_MOBILEDOCTOR='md';   // 医生版
+    const APP_NAME_MYZD = 'myzd'; // 患者版
+    const APP_NAME_MOBILEDOCTOR = 'md';   // 医生版
+    const HAS_REMOTE = 1;   //已上传至七牛
+    const HAS_NOTREMOTE = 0; //已上传至七牛 未上传至七牛
+    const DOCTOR_ACCPET_AGREE = 1; //医生同意接受订单
+    const DOCTOR_ACCPET_NOTAGREE = 0; //医生同意接受订单
+    const TASK_DOCTOR_CERT = 1;             //医生上传证件
+    const TASK_DOCTOR_PROFILE_NEW = 2;      //医生新增个人信息
+    const TASK_DOCTOR_PROFILE_UPDATE = 3;   //医生修改个人信息
+    const OPERATION_FINISHED = 1;       //下级医生确认手术已完成
 
-    // gender.
+// gender.
 
     public static function getOptionsGender() {
         return array(
@@ -114,12 +127,16 @@ class StatCode {
     public static function getOptionsBookingStatus() {
         return array(
             self::BK_STATUS_NEW => '待处理',
-            self::BK_STATUS_PROCESSING => '处理中',
+            self::BK_STATUS_PROCESSING => '安排中',
             self::BK_STATUS_CONFIRMED_DOCTOR => '专家已确认',
             self::BK_STATUS_PATIENT_ACCEPTED => '患者已接受',
-            self::BK_STATUS_INVALID => '失效的',
+            self::BK_STATUS_SERVICE_UNPAID => '待支付服务费', // 待支付服务费（确定手术时间）
+            self::BK_STATUS_SERVICE_PAIDED => '已支付服务费', // 已支付服务费（入院手术）
+            self::BK_STATUS_PROCESS_DONE => '跟进结束',
+            self::BK_STATUS_INVALID => '跟进无效',
             self::BK_STATUS_DONE => '已完成',
-            self::BK_STATUS_CANCELLED => '已取消'
+            self::BK_STATUS_CANCELLED => '已取消',
+            self::BK_STATUS_CHECKOUT => '已结账'
         );
     }
 

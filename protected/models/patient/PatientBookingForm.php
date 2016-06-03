@@ -4,12 +4,13 @@ class PatientBookingForm extends EFormModel {
 
     public $patient_id;
     public $patient_name;
+    public $expected_doctor;
+    public $expected_hospital;
+    public $expected_dept;
     public $creator_id;
     public $creator_name;
     public $status;
     public $travel_type;
-    public $date_start;
-    public $date_end;
     public $detail;
     public $user_agent;
     public $remark;
@@ -22,12 +23,13 @@ class PatientBookingForm extends EFormModel {
         // NOTE: you should only define rules for those attributes that
         // will receive user inputs.
         return array(
-            array('patient_id, creator_id, status, travel_type, date_start, date_end', 'required'),
+            array('patient_id, creator_id, status, travel_type', 'required'),
             array('patient_id, creator_id, status, travel_type', 'numerical', 'integerOnly' => true),
-            array('user_agent','length','max'=>20),
+            array('user_agent', 'length', 'max' => 20),
+            array('expected_doctor', 'length', 'max' => 200),
             array('detail', 'length', 'max' => 1000),
             array('remark', 'length', 'max' => 500),
-            array('patient_name, creator_name','safe'),
+            array('expected_doctor, expected_dept, expected_hospital, patient_name, creator_name, doctor_name', 'safe'),
         );
     }
 
@@ -41,8 +43,9 @@ class PatientBookingForm extends EFormModel {
             'creator_id' => '创建者',
             'status' => '状态',
             'travel_type' => '出行方式',
-            'date_start' => '开始日期',
-            'date_end' => '结束日期',
+            'expected_doctor' => '期望医生',
+            'expected_hospital' => '期望医院',
+            'expected_dept' => '期望科室',
             'detail' => '细节',
             'remark' => '备注',
         );

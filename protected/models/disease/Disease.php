@@ -100,15 +100,6 @@ class Disease extends EActiveRecord {
         ));
     }
 
-    public function getByName($name) {
-        $criteria = new CDbCriteria();
-        $criteria->addCondition('t.date_deleted is NULL');
-        $criteria->addSearchCondition('name', $name);
-        $criteria->compare('app_version', 7);
-        $criteria->limit = 1;
-        return $this->find($criteria);
-    }
-
     /**
      * Returns the static model of the specified AR class.
      * Please note that you should have this exact method in all your CActiveRecord descendants!

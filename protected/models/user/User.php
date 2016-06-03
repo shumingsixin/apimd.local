@@ -15,7 +15,7 @@
  * @property string $password
  * @property string $salt
  * @property string $password_raw
- * @property integer $terms
+ * @property integer $terms 
  * @property string $date_activated
  * @property string $last_login_time
  * @property string $date_created
@@ -50,7 +50,6 @@ class User extends EActiveRecord {
             array('password', 'length', 'max' => 64),
             array('password', 'length', 'min' => 64),
             array('salt', 'length', 'min' => 40),
-            array('uid', 'length', 'is'=>32, 'on' => 'register'),
             array('password_raw', 'required', 'message' => '请填写{attribute}.', 'on' => 'register'),
             array('password_raw', 'length', 'min' => 4, 'max' => 40, 'tooShort' => '{attribute}不可少于4位.', 'tooLong' => '{attribute}不可超过40位', 'on' => 'register'),
             array('date_activated, last_login_time, date_created, date_updated, date_deleted', 'safe'),
@@ -137,14 +136,6 @@ class User extends EActiveRecord {
         ));
     }
 
-    public function beforeValidate(){
-        parent::beforeValidate();
-        if(empty($this->uid)){
-            $this->createUID();
-        }
-        return true;
-    }
-
     /**
      * Returns the static model of the specified AR class.
      * Please note that you should have this exact method in all your CActiveRecord descendants!
@@ -158,7 +149,7 @@ class User extends EActiveRecord {
     /*     * ****** Query Methods ******* */
 
     /**
-     * @param string $username  User.username.
+     * @param string $username  User.username.     
      * @return User model.
      */
     public function getByUsername($username) {
@@ -168,22 +159,12 @@ class User extends EActiveRecord {
     public function getByUsernameAndRole($username, $role) {
         return $this->getByAttributes(array('username' => $username, 'role' => $role));
     }
-    
-    /**
-     * 根据ID获得用户信息
-     * @param unknown $username
-     * @return type
-     */
-    public function getByUserId($id) {
-        return $this->getByAttributes(array('id' => $id));
-    }
-    
+
     /*     * ****** Public Methods ****** */
 
     public function createNewModel() {
         $this->createSalt();
         $this->createPassword();
-//        $this->createUID();
     }
 
     public function checkLoginPassword($passwordInput) {
@@ -212,9 +193,6 @@ class User extends EActiveRecord {
     }
 
     /*     * ****** Private Methods ******* */
-    private function createUID(){
-        $this->uid = $this->strRandom(32);
-    }
 
     private function createSalt() {
         $this->salt = $this->strRandom(40);
@@ -270,16 +248,16 @@ class User extends EActiveRecord {
         return $this->userMedicalRecords->with('mrBookings');
     }
 
-    public function getUid() {
-        return $this->uid;
-    }
-
     public function getUsername() {
         return $this->username;
     }
 
     public function setUsername($v) {
         $this->username = $v;
+    }
+
+    public function getUid() {
+        return $this->uid;
     }
 
     public function getMobile() {

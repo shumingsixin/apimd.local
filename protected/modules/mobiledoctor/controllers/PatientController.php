@@ -14,7 +14,7 @@ class PatientController extends MobiledoctorController {
 
         $this->loadPatientInfoById($patientId);
 
-        //complete the running of other filters and execute the requested action.
+//complete the running of other filters and execute the requested action.
         $filterChain->run();
     }
 
@@ -37,6 +37,17 @@ class PatientController extends MobiledoctorController {
         $filterChain->run();
     }
 
+    public function filterUserContext($filterChain) {
+        $user = $this->loadUser();
+        if (is_null($user)) {
+            $redirectUrl = $this->createUrl('doctor/mobileLogin');
+            $currentUrl = $this->getCurrentRequestUrl();
+            $redirectUrl.='?returnUrl=' . $currentUrl;
+            $this->redirect($redirectUrl);
+        }
+        $filterChain->run();
+    }
+
     /**
      * @return array action filters
      */
@@ -44,8 +55,10 @@ class PatientController extends MobiledoctorController {
         return array(
             'accessControl', // perform access control for CRUD operations
             'postOnly + delete', // we only allow deletion via POST request
+            'userContext + create',
             'userDoctorContext + create ajaxCreate createPatientMR ajaxCreatePatientMR',
             'patientContext + createPatientMR updatePatientMR',
+            'userContext + list'
         );
     }
 
@@ -57,11 +70,11 @@ class PatientController extends MobiledoctorController {
     public function accessRules() {
         return array(
             array('allow', // allow all users to perform 'index' and 'view' actions
-                'actions' => array(''),
+                'actions' => array('list', 'create'),
                 'users' => array('*'),
             ),
             array('allow', // allow authenticated user to perform 'create' and 'update' actions
-                'actions' => array('create', 'view', 'createPatientMR', 'updatePatientMR', 'createBooking', 'ajaxCreate', 'ajaxCreate', 'ajaxCreatePatientMR', 'ajaxUploadMRFile', 'delectPatientMRFile', 'patientMRFiles', 'list', 'uploadMRFile'),
+                'actions' => array('ajaxTask', 'ajaxDrTask', 'view', 'createPatientMR', 'updatePatientMR', 'createBooking', 'ajaxCreate', 'ajaxCreatePatientMR', 'ajaxUploadMRFile', 'delectPatientMRFile', 'patientMRFiles', 'uploadMRFile', 'searchView', 'ajaxSearch', 'uploadDAFile'),
                 'users' => array('@'),
             ),
             array('deny', // deny all users
@@ -71,9 +84,10 @@ class PatientController extends MobiledoctorController {
     }
 
     public function actionAjaxCreate() {
+        $post = $this->decryptInput();
         $output = array('status' => 'no');
-        if (isset($_POST['patient'])) {
-            $values = $_POST['patient'];
+        if (isset($post['patient'])) {
+            $values = $post['patient'];
             $form = new PatientInfoForm();
             $form->setAttributes($values, true);
             $form->creator_id = $this->getCurrentUserId();
@@ -86,12 +100,10 @@ class PatientController extends MobiledoctorController {
                 }
                 $patient->setAttributes($form->attributes, true);
                 $patient->setAge();
-                //给省会名 城市名赋值
                 $regionState = RegionState::model()->getById($patient->state_id);
                 $patient->state_name = $regionState->getName();
                 $regionCity = RegionCity::model()->getById($patient->city_id);
                 $patient->city_name = $regionCity->getName();
-
                 if ($patient->save()) {
                     $output['status'] = 'ok';
                     $output['patient']['id'] = $patient->getId();
@@ -101,15 +113,30 @@ class PatientController extends MobiledoctorController {
             } else {
                 $output['errors'] = $form->getErrors();
             }
+        } else {
+            $output['error'] = 'data errors';
         }
         $this->renderJsonOutput($output);
     }
 
     public function actionCreate() {
+        $returnUrl = $this->getReturnUrl();
+        $user = $this->loadUser();
+        $doctorProfile = $user->getUserDoctorProfile();
+        $teamDoctor = 0;
+        if (isset($doctorProfile)) {
+            if ($doctorProfile->isVerified()) {
+                if ($doctorProfile->isTermsDoctor() === false) {
+                    $teamDoctor = 1;
+                }
+            }
+        }
         $form = new PatientInfoForm();
         $form->initModel();
         $this->render("createPatient", array(
-            'model' => $form
+            'model' => $form,
+            'teamDoctor' => $teamDoctor,
+            'returnUrl' => $returnUrl
         ));
     }
 
@@ -127,67 +154,33 @@ class PatientController extends MobiledoctorController {
      * 病人用户补全图片 type为是创建还是修改 返回不同的页面
      */
     public function actionUploadMRFile($id) {
-        $returnUrl = 'updateMRFile';
+        $returnUrl = $this->getReturnUrl($this->createUrl('patientbooking/create'));
+        $url = 'updateMRFile';
         if ($this->isUserAgentIOS()) {
-            $returnUrl = $returnUrl . 'Ios';
+            $url .= 'Ios';
         } else {
-            $returnUrl = $returnUrl . 'Android';
+            $url .= 'Android';
         }
-        $this->render($returnUrl, array(
-            'output' => array('id' => $id)
+        $this->render($url, array(
+            'output' => array('id' => $id, 'returnUrl' => $returnUrl)
         ));
     }
 
     /**
-     * 文件上传
+     * 进入上传出院小结页面
+     * @param type $id
      */
-    public function actionAjaxUploadMRFile() {
-        $output = array('status' => 'no');
-        if (isset($_POST['patient'])) {
-            $values = $_POST['patient'];
-            $patientMgr = new PatientManager();
-            if (isset($values['id']) === false) {
-                // ['patient']['mrid'] is missing.
-                $output['status'] = 'no';
-                $output['error'] = 'invalid parameters';
-                $this->renderJsonOutput($output);
-            }
-            $id = $values['id'];
-            $patientInfo = $patientMgr->loadPatientInfoById($id);
-            if (isset($patientInfo) === false) {
-                // PatientInfo record is not found in db.
-                $output['status'] = 'no';
-                $output['errors'] = 'invalid mrid';
-                $this->renderJsonOutput($output);
-            } else {
-                $output['patientId'] = $patientInfo->getId();
-                $reportType = isset($values['report_type']) ? $values['report_type'] : StatCode::MR_REPORTTYPE_MR;
-                $ret = $patientMgr->createPatientMRFile($patientInfo, $reportType);
-                if (isset($ret['error'])) {
-                    $output['status'] = 'no';
-                    $output['error'] = $ret['error'];
-                    $output['file'] = '';
-                } else {
-                    // create file output.
-                    $fileModel = $ret['filemodel'];
-                    $data = new stdClass();
-                    $data->id = $fileModel->getId();
-                    $data->patientId = $fileModel->getPatientId();
-                    $data->fileUrl = $fileModel->getAbsFileUrl();
-                    $data->tnUrl = $fileModel->getAbsThumbnailUrl();
-                    $data->deleteUrl = $this->createUrl('patient/deleteMRFile', array('id' => $fileModel->getId()));
-
-                    $output['status'] = 'ok';
-                    $output['file'] = $data;
-                }
-            }
-        }
-        if (isset($_POST['plugin'])) {
-            echo CJSON::encode($output);
-            Yii::app()->end(200, true); //结束 返回200
+    public function actionUploadDAFile($id) {
+        $returnUrl = $this->getReturnUrl($this->createUrl('order/orderView'));
+        $url = 'updateDAFile';
+        if ($this->isUserAgentIOS()) {
+            $url .= 'Ios';
         } else {
-            $this->renderJsonOutput($output);
+            $url .= 'Android';
         }
+        $this->render($url, array(
+            'output' => array('id' => $id, 'returnUrl' => $returnUrl)
+        ));
     }
 
     private function loadPatientInfoById($id) {
@@ -221,23 +214,46 @@ class PatientController extends MobiledoctorController {
     public function actionPatientMRFiles($id) {
         $userId = $this->getCurrentUserId();
         $apisvc = new ApiViewFilesOfPatient($id, $userId);
-        $output = $apisvc->loadApiViewData();
+        $output = $apisvc->loadApiViewData(true);
         $this->renderJsonOutput($output);
     }
 
     //我的患者列表信息查询
     public function actionList($page = 1) {
-        $userId = $this->getCurrentUserId();
+        $user = $this->loadUser();
+        $userId = $user->getId();
+        $doctorProfile = $user->getUserDoctorProfile();
+        $teamDoctor = 0;
+        if (isset($doctorProfile)) {
+            if ($doctorProfile->isVerified()) {
+                if ($doctorProfile->isTermsDoctor() === false) {
+                    $teamDoctor = 1;
+                }
+            }
+        }
         $pagesize = 100;
         //service层
         $apisvc = new ApiViewDoctorPatientList($userId, $pagesize, $page);
         //调用父类方法将数据返回
         $output = $apisvc->loadApiViewData();
-        
+
         $dataCount = $apisvc->loadCount();
         $this->render('list', array(
-            'data' => $output, 'dataCount' => $dataCount
+            'data' => $output, 'dataCount' => $dataCount, 'teamDoctor' => $teamDoctor
         ));
+    }
+
+    //进入搜索页面
+    public function actionSearchView() {
+        $this->render('searchView');
+    }
+
+    //ajax查询
+    public function actionAjaxSearch($name) {
+        $userId = $this->getCurrentUserId();
+        $apisvc = new ApiViewPatientSearch($userId, $name);
+        $output = $apisvc->loadApiViewData(true);
+        $this->renderJsonOutput($output);
     }
 
     //我的患者详情
@@ -250,6 +266,22 @@ class PatientController extends MobiledoctorController {
         $this->render('view', array(
             'data' => $output
         ));
+    }
+
+    //修改已创建的患者图片信息添加任务提示
+    public function actionAjaxTask($id) {
+        $apiRequest = new ApiRequestUrl();
+        $remote_url = $apiRequest->getUrlPatientMrTask() . "?id={$id}";
+        //本地测试请用 $remote_url="192.168.31.119/admin/api/taskpatientmr?id={$id}";
+        $this->send_get($remote_url);
+    }
+
+    //上传出院小结完成生成task
+    public function actionAjaxDrTask($id) {
+        $apiRequest = new ApiRequestUrl();
+        $remote_url = $apiRequest->getUrlDaTask() . "?id={$id}";
+        //本地测试请用 $remote_url="192.168.1.216/admin/api/taskpatientda?id={$id}";
+        $this->send_get($remote_url);
     }
 
 }

@@ -1,13 +1,13 @@
 <?php
 
 class SmsManager {
-
     const VENDOR_JIANZHOU = 'jianzhou';
     const VENDOR_YUNTONGXUN = 'yuntongxun';
     const VENDOR_ACTIVE = 'jianzhou';
     const JIANZHOU_ACCOUNT = 'sdk_myzd';
     const JIANZHOU_PASSWORD = '91466636';
     const JIANZHOU_URL = 'http://www.jianzhou.sh.cn/JianzhouSMSWSServer/http/sendBatchMessage';
+
 
     /**
      * 发起HTTPS请求
@@ -20,9 +20,9 @@ class SmsManager {
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
         curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT,10);
         curl_setopt($ch, CURLOPT_POST, $post);
-        if ($post) {
+        if ($post){
             $post_data = http_build_query($data);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
         }
@@ -48,10 +48,10 @@ class SmsManager {
 
         $result = $this->curlRequest(self::JIANZHOU_URL, $post_data);
 
-        if ($result > 0) {
+        if($result > 0) {
             $is_success = 1;
             $result = null;
-        } else {
+        }else{
             $is_success = 0;
         }
         $msgSmsLog = new MsgSmsLog();
@@ -118,8 +118,8 @@ class SmsManager {
             $templateId = '25322';  //template id, from 云通讯.
             $values = array($code, $expiry);
             return $this->sendSmsTemplateViaYunTongXun($to, $values, $templateId);
-        } elseif ($vendor == self::VENDOR_JIANZHOU) {
-            $model = MsgSmsTemplate::model()->getByAttributes(array('code' => 'verifyCode', 'vendor_name' => $vendor));
+        }elseif($vendor == self::VENDOR_JIANZHOU){
+            $model = MsgSmsTemplate::model()->getByAttributes(array('code'=>'verifyCode', 'vendor_name'=>$vendor));
             $values = array($code, $expiry);
             $content = str_replace(array('{verifyCode}', '{minute}'), $values, $model->content);
             return $this->sendSmsTemplateViaJianZhou($to, $content);
@@ -137,8 +137,8 @@ class SmsManager {
         if ($vendor == self::VENDOR_YUNTONGXUN) {
             $templateId = '61004';  //template id, from 云通讯.
             $error = $this->sendSmsTemplateViaYunTongXun($to, $data, $templateId);
-        } elseif ($vendor == self::VENDOR_JIANZHOU) {
-            $model = MsgSmsTemplate::model()->getByAttributes(array('code' => 'wx.coupon', 'vendor_name' => $vendor));
+        }elseif($vendor == self::VENDOR_JIANZHOU){
+            $model = MsgSmsTemplate::model()->getByAttributes(array('code'=>'wx.coupon', 'vendor_name'=>$vendor));
             $content = $model->content;
             return $this->sendSmsTemplateViaJianZhou($to, $content);
         }
@@ -158,13 +158,14 @@ class SmsManager {
             $days = 1;
             $values = array($data->refno, $data->expertBooked, $days);
             return $this->sendSmsTemplateViaYunTongXun($to, $values, $templateId);
-        } elseif ($vendor == self::VENDOR_JIANZHOU) {
-            $model = MsgSmsTemplate::model()->getByAttributes(array('code' => 'booking.create.user', 'vendor_name' => $vendor));
+        }elseif($vendor == self::VENDOR_JIANZHOU){
+            $model = MsgSmsTemplate::model()->getByAttributes(array('code'=>'booking.create.user', 'vendor_name'=>$vendor));
             $days = 1;
             $values = array($data->refno, $data->expertBooked, $days);
             $content = str_replace(array('{bkRefNo}', '{doctor}', '{day}'), $values, $model->content);
 
             return $this->sendSmsTemplateViaJianZhou($to, $content);
+
         }
     }
 
@@ -183,8 +184,8 @@ class SmsManager {
             $url = 'http://md.mingyizhudao.com/mobiledoctor/patientbooking/doctorPatientBooking?id=' . $data->id;
             $values = array($data->refno, $url);
             return $this->sendSmsTemplateViaYunTongXun($to, $values, $templateId);
-        } elseif ($vendor == self::VENDOR_JIANZHOU) {
-            $model = MsgSmsTemplate::model()->getByAttributes(array('code' => 'booking.received.expert', 'vendor_name' => $vendor));
+        }elseif($vendor == self::VENDOR_JIANZHOU){
+            $model = MsgSmsTemplate::model()->getByAttributes(array('code'=>'booking.received.expert', 'vendor_name'=>$vendor));
             $url = 'http://md.mingyizhudao.com/mobiledoctor/patientbooking/doctorPatientBooking?id=' . $data->id;
             $values = array($data->refno, $url);
             $content = str_replace(array('{bkRefNo}', '{url}'), $values, $model->content);
@@ -204,8 +205,8 @@ class SmsManager {
             $templateId = '49857';  //template id, from 云通讯.
             $values = array($data->amount, $data->refno);
             return $this->sendSmsTemplateViaYunTongXun($to, $values, $templateId);
-        } elseif ($vendor == self::VENDOR_JIANZHOU) {
-            $model = MsgSmsTemplate::model()->getByAttributes(array('code' => 'booking.pay', 'vendor_name' => $vendor));
+        }elseif($vendor == self::VENDOR_JIANZHOU){
+            $model = MsgSmsTemplate::model()->getByAttributes(array('code'=>'booking.pay', 'vendor_name'=>$vendor));
             $values = array($data->amount, $data->refno);
             $content = str_replace(array('{amount}', '{refNo}'), $values, $model->content);
             return $this->sendSmsTemplateViaJianZhou($to, $content);
@@ -219,8 +220,8 @@ class SmsManager {
      * @param string $vendor
      * @return mixed|string
      */
-    public function sendSmsCustomize($to, $content, $vendor = self::VENDOR_ACTIVE) {
-        if ($vendor == self::VENDOR_JIANZHOU) {
+    public function sendSmsCustomize($to, $content, $vendor = self::VENDOR_ACTIVE){
+        if($vendor == self::VENDOR_JIANZHOU){
             $content = strip_tags($content);
             return $this->sendSmsTemplateViaJianZhou($to, $content);
         }

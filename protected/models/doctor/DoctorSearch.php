@@ -3,7 +3,7 @@
 class DoctorSearch extends ESearchModel {
 
     public function __construct($searchInputs, $with = null) {
-        $searchInputs['order'] = 'is_contracted DESC, role, medical_title, convert(name using gbk)';
+        $searchInputs['order'] = 't.is_contracted DESC,t.role DESC,t.medical_title,convert(t.name using gbk)';
         parent::__construct($searchInputs, $with);
     }
 
@@ -12,28 +12,31 @@ class DoctorSearch extends ESearchModel {
     }
 
     public function getQueryFields() {
-        return array('city', 'disease', 'hospital', 'hpdept', 'mtitle', 'disease_name', 'disease_category', 'is_contracted', 'disease_sub_category');
+        return array('name', 'city', 'state', 'disease', 'hospital', 'hpdept', 'mtitle', 'disease_name', 'disease_category', 'disease_sub_category');
     }
 
     public function addQueryConditions() {
-        $this->criteria->addCondition('t.date_deleted is NULL');
         $this->criteria->compare('t.is_contracted', '1');
         //$this->criteria->addCondition('t.user_id is not null');
         if ($this->hasQueryParams()) {
+            // Doctor.Name
+            if (isset($this->queryParams['name'])) {
+                $name = $this->queryParams['name'];
+                $this->criteria->addSearchCondition('name', $name);
+            }
             // Doctor.medical_title
             if (isset($this->queryParams['mtitle'])) {
                 $mtitle = $this->queryParams['mtitle'];
                 $this->criteria->compare('t.medical_title', $mtitle);
             }
-            // Doctor.is_contracted
-            if (isset($this->queryParams['is_contracted'])) {
-                $is_contracted = $this->queryParams['is_contracted'];
-                $this->criteria->compare('t.is_contracted', $is_contracted);
-            }
             // Doctor.city
             if (isset($this->queryParams['city'])) {
                 $cityId = $this->queryParams['city'];
                 $this->criteria->compare('t.city_id', $cityId);
+            }
+            if (isset($this->queryParams['state'])) {
+                $stateId = $this->queryParams['state'];
+                $this->criteria->compare('t.state_id', $stateId);
             }
             // Disease.
             if (isset($this->queryParams['disease'])) {
@@ -46,6 +49,7 @@ class DoctorSearch extends ESearchModel {
             if (isset($this->queryParams['disease_name'])) {
                 $disease_name = $this->queryParams['disease_name'];
                 $this->criteria->join = 'left join disease_doctor_join ddj on (t.`id`=ddj.`doctor_id`) left join disease d on d.id=ddj.disease_id';
+                $this->criteria->compare("d.app_version", 7);
                 $this->criteria->addSearchCondition('d.name', $disease_name);
                 $this->criteria->distinct = true;
             }
@@ -62,9 +66,12 @@ class DoctorSearch extends ESearchModel {
             // disease_category.
             if (isset($this->queryParams['disease_category'])) {
                 $cateId = $this->queryParams['disease_category'];
-                $this->criteria->join = 'left join disease_doctor_join b on t.id=b.doctor_id left join disease c on c.id=b.disease_id left join disease_category d on c.category_id=d.sub_cat_id';
+//                $this->criteria->join .= 'left join category_doctor_join b on t.id=b.doctor_id  left join disease_category c on b.sub_cat_id=c.sub_cat_id';
+                $this->criteria->join = 'left join disease_doctor_join b on t.id=b.doctor_id left join category_disease_join c on c.disease_id=b.disease_id left join disease_category d on d.sub_cat_id=c.sub_cat_id';
                 $this->criteria->addCondition("d.cat_id=:cateId");
+                $this->criteria->addCondition("d.app_version=:app");
                 $this->criteria->params[":cateId"] = $cateId;
+                $this->criteria->params[":app"] = 7;
                 $this->criteria->distinct = true;
             }
             // disease_sub_category.
@@ -74,11 +81,13 @@ class DoctorSearch extends ESearchModel {
                 $this->criteria->addCondition("c.sub_cat_id=:category_id");
                 $this->criteria->params[":category_id"] = $category_id;
                 $this->criteria->distinct = true;
-                /* $category_id= $this->queryParams['disease_sub_category'];
-                $this->criteria->join = 'left join disease_doctor_join b on t.id=b.doctor_id left join disease c on c.id=b.disease_id ';
-                $this->criteria->addCondition("c.category_id=:category_id");
-                $this->criteria->params[":category_id"] = $category_id;
-                $this->criteria->distinct = true; */
+
+//                $category_id= $this->queryParams['disease_sub_category'];
+//                $this->criteria->join = 'left join category_doctor_join b on t.id=b.doctor_id ';
+//                $this->criteria->addCondition("b.sub_cat_id=:sub_cat_id");
+//                $this->criteria->params[":sub_cat_id"] = $category_id;
+////                $this->criteria->order = 'expteam_id desc';
+//                $this->criteria->distinct = true;
             }
         }
     }

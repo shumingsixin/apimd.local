@@ -53,6 +53,9 @@ class Booking extends EActiveRecord {
         return 'booking';
     }
 
+    //预约页面分页行数
+    const BOOKING_PAGE_SIZE = 10;
+
     /**
      * @return array validation rules for model attributes.
      */
@@ -61,15 +64,15 @@ class Booking extends EActiveRecord {
         // will receive user inputs.
         return array(
             array('ref_no, mobile, bk_status, bk_type', 'required'),
-            array('user_id, bk_status, bk_type, doctor_id, expteam_id, city_id, hospital_id, hp_dept_id, is_corporate', 'numerical', 'integerOnly' => true),
+            array('doctor_user_id, user_id, bk_status, bk_type, doctor_id, expteam_id, city_id, hospital_id, hp_dept_id, is_corporate, doctor_accept', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('mobile', 'length', 'is' => 11),
             array('contact_name, doctor_name, expteam_name, hospital_name, hp_dept_name, disease_name, corporate_name, corp_staff_rel, user_agent', 'length', 'max' => 50),
             array('contact_email', 'length', 'max' => 100),
-            array('disease_detail', 'length', 'max' => 1000),
+            array('disease_detail, doctor_opinion', 'length', 'max' => 1000),
             array('remark', 'length', 'max' => 500),
             array('submit_via', 'length', 'max' => 10),
-            array('date_start, date_end, appt_date, date_created, date_updated, date_deleted, user_agent', 'safe'),
+            array('date_start, date_end, appt_date, date_created, date_updated, date_deleted, user_agent,is_commonweal,booking_service_id', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
             array('id, ref_no, user_id, mobile, contact_name, contact_email, bk_status, bk_type, doctor_id, doctor_name, expteam_id, expteam_name, city_id, hospital_id, hospital_name, hp_dept_id, hp_dept_name, disease_name, disease_detail, date_start, date_end, appt_date, remark, submit_via, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
@@ -92,6 +95,7 @@ class Booking extends EActiveRecord {
             'bkFiles' => array(self::HAS_MANY, 'BookingFile', 'booking_id'),
             'countFiles' => array(self::STAT, "BookingFile", 'booking_id'),
             'pbOrder' => array(self::HAS_MANY, 'SalesOrder', 'bk_id'),
+            'bkComment' => array(self::HAS_MANY, 'Comment', 'bk_id'),
         );
     }
 
@@ -247,6 +251,8 @@ class Booking extends EActiveRecord {
 
     public function getAllByUserIdOrMobile($userId, $mobile, $with = null, $options = null) {
         $criteria = new CDbCriteria();
+        $criteria->join = 'LEFT JOIN comment c ON (t.`id` = c.`bk_id` AND c.`bk_type` =' . StatCode::TRANS_TYPE_BK . ')';
+        $criteria->distinct = true;
         $criteria->compare("t.user_id", $userId, false, 'AND');
         $criteria->compare("t.mobile", $mobile, false, 'OR');
         $criteria->addCondition("t.date_deleted is NULL");
@@ -260,6 +266,24 @@ class Booking extends EActiveRecord {
             $criteria->order = $options['order'];
 
         return $this->findAll($criteria);
+    }
+
+    //根据上级医生用户id查询患者预约
+    public function getAllByDoctorUserId($doctorUserId) {
+        return $this->getAllByAttributes(array('doctor_user_id' => $doctorUserId));
+    }
+
+    //根据上级医生用户id和bookingid查询预约详情
+    public function getByIdAndDoctorUserId($id, $doctorUserId) {
+        return $this->getByAttributes(array('id' => $id, 'doctor_user_id' => $doctorUserId));
+    }
+
+    public function getCountByUserIdOrMobile($userId, $mobile) {
+        $criteria = new CDbCriteria();
+        $criteria->compare("t.user_id", $userId, false, 'AND');
+        $criteria->compare("t.mobile", $mobile, false, 'OR');
+        $criteria->addCondition("t.date_deleted is NULL");
+        $this->count($criteria);
     }
 
     public function setIsCorporate($v = 1) {
@@ -311,6 +335,42 @@ class Booking extends EActiveRecord {
         }
     }
 
+    public static function getOptionsBookingStatus() {
+        return array(
+            StatCode::BK_STATUS_NEW => '待付预约金',
+            StatCode::BK_STATUS_PROCESSING => '安排专家中',
+//            StatCode::BK_STATUS_CONFIRMED_DOCTOR => '专家已确认',
+//            StatCode::BK_STATUS_PATIENT_ACCEPTED => '患者已接受',
+            StatCode::BK_STATUS_SERVICE_UNPAID => '待付咨询费',
+            StatCode::BK_STATUS_SERVICE_PAIDED => '待评价',
+            StatCode::BK_STATUS_PROCESS_DONE => '跟进结束',
+            StatCode::BK_STATUS_DONE => '已评价',
+            StatCode::BK_STATUS_INVALID => '无效',
+            StatCode::BK_STATUS_CANCELLED => '已取消'
+        );
+    }
+
+    public function getBookingStatus() {
+        $options = self::getOptionsBookingStatus();
+        if (isset($options[$this->bk_status])) {
+            return $options[$this->bk_status];
+        } else {
+            return null;
+        }
+    }
+
+    public function getDoctorAccept() {
+        return $this->doctor_accept;
+    }
+
+    public function getDoctorOpinion($ntext = true) {
+        return $this->getTextAttribute($this->doctor_opinion, $ntext);
+    }
+
+    public function getCsExplain($ntext = true) {
+        return $this->getTextAttribute($this->cs_explain, $ntext);
+    }
+
     public function hasBookingTarget() {
         return (empty($this->booking_target) === false);
     }
@@ -337,22 +397,24 @@ class Booking extends EActiveRecord {
      */
     private function getRefNumberPrefix() {
         switch ($this->bk_type) {
-            //case StatCode::BK_TYPE_FACULTY :
-            //     return "FC";
             case StatCode::BK_TYPE_DOCTOR :
                 return "DR";
             case StatCode::BK_TYPE_EXPERTTEAM :
                 return "ET";
-            //case self::BOOKING_TYPE_HOSPITAL :
-            //   return "HP";
             case StatCode::BK_TYPE_QUICKBOOK :
                 return "QB";
+            case StatCode::BK_TYPE_DEPT :
+                return "HP";
             default:
                 return "AA";
         }
     }
 
     /*     * ****** Accessors ******* */
+
+    public function getComment() {
+        return $this->bkComment;
+    }
 
     public function getExpertBooked() {
         if ($this->bk_type == StatCode::BK_TYPE_EXPERTTEAM) {
@@ -368,7 +430,7 @@ class Booking extends EActiveRecord {
         if ($this->getExpertBooked() !== null) {
             return $this->getExpertBooked()->getName();
         } else {
-            return $this->doctor_name;
+            return '';
         }
     }
 
@@ -417,7 +479,7 @@ class Booking extends EActiveRecord {
     }
 
     public function getBkStatus() {
-        return StatCode::getBookingStatus($this->bk_status);
+        return self::getBookingStatus($this->bk_status);
     }
 
     public function setBkStatus($v) {
@@ -426,6 +488,14 @@ class Booking extends EActiveRecord {
 
     public function getBookingType() {
         return StatCode::getBookingType($this->bk_type);
+    }
+
+    public function setDoctorAccept($v) {
+        $this->doctor_accept = $v;
+    }
+
+    public function setDoctorOpinion($v) {
+        $this->doctor_opinion = $v;
     }
 
     public function getDoctorName() {
@@ -507,22 +577,9 @@ class Booking extends EActiveRecord {
     public function getCorpStaffRef() {
         return $this->corp_staff_rel;
     }
-    
+
     public function getUserAgent() {
         return $this->user_agent;
     }
-    
-    public function setDoctorAccept($v) {
-        $this->doctor_accept = $v;
-    }
-    
-    public function setDoctorOpinion($v) {
-        $this->doctor_opinion = $v;
-    }
-    
-    //根据上级医生用户id和bookingid查询预约详情
-    public function getByIdAndDoctorUserId($id, $doctorUserId) {
-        return $this->getByAttributes(array('id' => $id, 'doctor_user_id' => $doctorUserId));
-    }
-    
+
 }

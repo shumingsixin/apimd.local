@@ -13,9 +13,8 @@ class MobiledoctorModule extends CWebModule {
 
         $this->setImport(array(
             'mobiledoctor.components.*',
-            'mobiledoctor.apiservices.*',
-//            'weixinpub.components.*',
-//            'weixinpub.models.*',
+            'weixinpub.components.*',
+            'weixinpub.models.*',
         ));
 
         Yii::app()->setComponents(array(
@@ -31,7 +30,7 @@ class MobiledoctorModule extends CWebModule {
             ),
                 ), true);
 
-        //$this->setTheme('md2');
+        $this->setTheme('md2');
         $this->defaultController = 'doctor';
     }
 

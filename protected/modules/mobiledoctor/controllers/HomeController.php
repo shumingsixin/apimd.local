@@ -16,7 +16,7 @@ class HomeController extends MobiledoctorController {
     }
 
     public function actionIndex() {
-        //$this->redirect(Yii::app()->user->loginUrl);
+        $this->redirect(Yii::app()->user->loginUrl);
         /*
           $apiService = new ApiViewAppNav1V2();
           $data = $apiService->loadApiViewData();

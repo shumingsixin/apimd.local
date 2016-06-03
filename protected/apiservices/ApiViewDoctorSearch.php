@@ -31,6 +31,7 @@ class ApiViewDoctorSearch extends EApiViewService {
             $this->output = array(
                 'status' => self::RESPONSE_OK,
                 'errorCode' => 0,
+                'dataNum' => $this->doctorCount,
                 'errorMsg' => 'success',
                 'results' => $this->doctors,
             );
@@ -51,20 +52,15 @@ class ApiViewDoctorSearch extends EApiViewService {
             $data = new stdClass();
             $data->id = $model->getId();
             $data->name = $model->getName();
-            $data->docName = $data->name;   //@TODO delete. not used by ios.
             $data->mTitle = $model->getMedicalTitle();
             $data->aTitle = $model->getAcademicTitle();
-            // $data->hospital = $model->getHospitalId();
             $data->hpName = $model->getHospitalName();
-            $data->hospital = $data->hpName;    //@TODO delete. not used by ios.
-            $data->hpDeptId = $model->getHpDeptId();
             $data->hpDeptName = $model->getHpDeptName();
             $data->desc = $model->getDescription();
             $data->imageUrl = $model->getAbsUrlAvatar();
-            $data->urlImage = $data->imageUrl;  //@TODO delete. not used by ios.
-            $data->doctorInfoUrl = Yii::app()->createAbsoluteUrl('apimd/doctorinfo/'.$data->id);    // @used by app.
-            //$data->bookingUrl = Yii::app()->createAbsoluteUrl('/mobile/booking/create', array('did' => $model->getId(), 'header' => 0, 'footer' => 0));   // @used by app.
             $data->isContracted = $model->getIsContracted();
+            $data->reasons = $model->getReasons();
+            $data->actionUrl = Yii::app()->createAbsoluteUrl('/apimd/contractdoctor/' . $model->getId());
             $this->doctors[] = $data;
         }
     }

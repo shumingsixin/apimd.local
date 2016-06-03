@@ -12,6 +12,7 @@ class ApiViewSalesOrder extends EApiViewService {
     //初始化类的时候将参数注入
     public function __construct($refNo) {
         parent::__construct();
+        $this->salesOrder = null;
         $this->refNo = $refNo;
         $this->results = new stdClass();
     }
@@ -39,6 +40,7 @@ class ApiViewSalesOrder extends EApiViewService {
         if (isset($model)) {
             $this->setSalesOrder($model);
         }
+        $this->results->salesOrder = $this->salesOrder;
     }
 
     private function setSalesOrder(SalesOrder $model) {
@@ -55,7 +57,6 @@ class ApiViewSalesOrder extends EApiViewService {
         $this->bkId = $model->getBkId();
         $this->bkType = $model->getBkType();
         $this->salesOrder = $data;
-        $this->results->salesOrder = $this->salesOrder;
     }
 
     //加载booking数据
@@ -67,17 +68,20 @@ class ApiViewSalesOrder extends EApiViewService {
             $model = PatientBooking::model()->getById($this->bkId, array('pbDoctor', 'pbPatient'));
         }
         $this->setBooking($model);
+        $this->results->booking = $this->booking;
     }
 
     private function setBooking($model) {
         $data = new stdClass();
         if ($model instanceof Booking) {
+            $data->id = $model->getId();
             $data->patientName = $model->getContactName();
             $data->mobile = $model->getMobile();
             $data->expertBooked = $model->getExpertBooked();
             $data->diseaseName = $model->getDiseaseName();
             $data->diseaesDetail = $model->getDiseaseDetail();
         } elseif ($model instanceof PatientBooking) {
+            $data->id = $model->getId();
             $data->expertBooked = ''; // join patient_booking.doctor_id;
             $data->mobile = '';
             $data->patientName = '';
@@ -94,7 +98,6 @@ class ApiViewSalesOrder extends EApiViewService {
             $data->diseaesDetail = $model->getDetail();
         }
         $this->booking = $data;
-        $this->results->booking = $this->booking;
     }
 
 }

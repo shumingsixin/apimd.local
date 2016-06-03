@@ -30,23 +30,30 @@ class PatientManager {
     }
 
     //查询该创建者所有预约患者的总数
-    public function loadPatientBookingNumberByCreatorId($creator_id,$stuats) {
+    public function loadPatientBookingNumberByCreatorId($creator_id, $status) {
         $criteria = new CDbCriteria();
         $criteria->compare('t.creator_id', $creator_id);
-        if($stuats>'0'){
-            $criteria->compare('t.status', $stuats);
+        if ($status != '0') {
+            $criteria->compare('t.status', $status);
         }
         $criteria->addCondition('t.date_deleted is NULL');
         return PatientBooking::model()->count($criteria);
     }
 
+    //分组查询各个状态的预约量
+    public function loadCountByStatus($creator_id) {
+        $criteria = new CDbCriteria();
+        $criteria->select = 't.status,count(1) id';
+        $criteria->compare('t.creator_id', $creator_id);
+        $criteria->addCondition('t.date_deleted is NULL');
+        $criteria->group = 't.status';
+        return PatientBooking::model()->findAll($criteria);
+    }
+
     //查询该医生所有的预约患者总数
-    public function loadPatientBookingNumberByDoctorId($doctor_id,$status) {
+    public function loadPatientBookingNumberByDoctorId($doctor_id) {
         $criteria = new CDbCriteria();
         $criteria->compare('t.doctor_id', $doctor_id);
-        if($status>0){
-            $criteria->compare('t.status', $status);
-        }
         $criteria->addCondition('t.date_deleted is NULL');
         return PatientBooking::model()->count($criteria);
     }
@@ -71,47 +78,13 @@ class PatientManager {
     }
 
     //查询预约该医生的患者列表
-    public function loadPatientBookingListByDoctorId($doctorId,$status, $attributes = '*', $with = null, $options = null) {
-        return PatientBooking::model()->getAllByDoctorId($doctorId,$status, $with = null, $options = null);
+    public function loadPatientBookingListByDoctorId($doctorId, $attributes = '*', $with = null, $options = null) {
+        return PatientBooking::model()->getAllByDoctorId($doctorId, $with = null, $options = null);
     }
 
     //查询预约该医生的患者详细信息
     public function loadPatientBookingByIdAndDoctorId($id, $doctorId, $attributes = '*', $with = null) {
         return PatientBooking::model()->getByIdAndDoctorId($id, $doctorId, $with);
-    }
-
-    public function createPatientMRFile(PatientInfo $patientInfo, $reportType) {
-        $patientId = $patientInfo->getId();
-        $creatorId = $patientInfo->getCreatorId();
-        $uploadField = PatientMRFile::model()->file_upload_field;
-        $file = EUploadedFile::getInstanceByName($uploadField);
-        if (isset($file)) {
-            //文件储存
-            $output['filemodel'] = $this->savePatientMRFile($patientId, $creatorId, $reportType, $file);
-        } else {
-            $output['error'] = 'missing uploaded file in - ' . $uploadField;
-        }
-        return $output;
-    }
-
-    public function createPatientMRFiles(PatientInfo $patientInfo, $reportType) {
-        $patientId = $patientInfo->getId();
-        $creatorId = $patientInfo->getCreatorId();
-        $uploadField = PatientMRFile::model()->file_upload_field;
-        $files = EUploadedFile::getInstancesByName($uploadField);
-        if (isset($files)) {
-            //文件储存
-            $data = array();
-            foreach ($files as $file) {
-                $data[] = $this->savePatientMRFile($patientId, $creatorId, $reportType, $file);
-            }
-            $output['filemodel'] = $data;
-            // var_dump($data);                exit();
-        } else {
-            $output['error'] = 'missing uploaded file in - ' . $uploadField;
-        }
-
-        return $output;
     }
 
     //查询创建者预约列表
@@ -154,16 +127,12 @@ class PatientManager {
         }
         return PatientInfo::model()->getByIdAndCreatorId($id, $creatorId, $attributes, $with, $options);
     }
-    
-    /**
-     * 根据patientId查询相关预约单患者详情
-     */
-    public function loadPatientInfoByPatientId($patientId, $attributes){
-        if (is_null($attributes)) {
-            $attributes = '*';
-        }
-        return PatientInfo::model()->getById($patientId, $attributes, $with, $options);
+
+    //根据患者名字查询患者
+    public function loadPatientListByCreateorIdAndName($createorId, $name, $attributes = '*', $with = null, $options = null) {
+        return PatientInfo::model()->getAllByAttributes(array('creator_id' => $createorId, 'name' => $name), $attributes, $with, $options);
     }
+
     /**
      * Get EUploadedFile from $_FILE. 
      * Create DoctorCert model. 
@@ -182,249 +151,155 @@ class PatientManager {
         return $pFile;
     }
 
-    /**
-     * api 创建或修改(id设值)患者基本信息
-     * @param User $user
-     * @param $values
-     * @param null $id
-     * @return mixed
-     */
-    public function apiCreatePatientInfo(User $user, $values, $id=null) {
-        // create a new model and save into db.
-        $userId = $user->getId();
-        if(isset($id)){
-            $model = PatientInfo::model()->getByIdAndCreatorId($id, $userId);
-            if (is_null($model)) {
-                $output['status'] = EApiViewService::RESPONSE_NO;
-                $output['errorCode'] = ErrorList::UNAUTHORIZED;
-                $output['errorMsg'] = '您没有权限执行此操作';
-                return $output;
-            }
-        }else{
-            $model = new PatientInfo();
-        }
-
-        $model->setAttributes($values);
-        $model->creator_id = $userId;
-        $model->country_id = 1;
-        list($birth_year, $birth_month) = explode('-', $values['birth']);
-        $model->birth_year = $birth_year;
-        $model->birth_month = (int) $birth_month;
-        $model->setAge();
-
-        //给省会名 城市名赋值
-        $regionState = RegionState::model()->getById($model->state_id);
-        $model->state_name = $regionState->getName();
-        $regionCity = RegionCity::model()->getById($model->city_id);
-        $model->city_name = $regionCity->getName();
-        //print_r($model);exit;
-        if ($model->save()) {
-            $output['status'] = EApiViewService::RESPONSE_OK;
-            $output['errorCode'] = ErrorList::ERROR_NONE;
-            $output['errorMsg'] = 'success';
-            $output['results'] = array(
-                'id' => $model->getId(),
-                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/patientfile'),
-            );
-        } else {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::UNAUTHORIZED;
-            $output['errorMsg'] = $model->getErrors();
-        }
-
-        return $output;
-    }
-
-    /**
-     * api 上传患者病历图片
-     * @param User $user
-     * @param $values
-     * @param $file
-     * @return array
-     */
-    public function apiCreatePatientFile(User $user, $values, $file) {
-        if (is_null($file)) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::BAD_REQUEST;
-            $output['errorMsg'] = '请上传图片';
-            return $output;
-        }
-        // validates input parameters.
-        if (isset($values['patient_id']) === false) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::BAD_REQUEST;
-            $output['errorMsg'] = '参数错误';
-            return $output;
-        }
-        $patientId = $values['patient_id'];
-        $userId = $user->getId();
-
-        // TODO: load $patient from db by $patientId.
-        $patient = PatientInfo::model()->getByIdAndCreatorId($patientId, $userId);
-        if (is_null($patient)) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::UNAUTHORIZED;
-            $output['errorMsg'] = '您没有权限执行此操作';
-            return $output;
-        }
-        // create PatientFile and save into db.
-        $reportType = isset($values['report_type']) ? $values['report_type'] : StatCode::MR_REPORTTYPE_MR;
-        $patientFile = $this->savePatientMRFile($patientId, $userId, $reportType, $file);
-        if ($patientFile->hasErrors()) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::BAD_REQUEST;
-            $output['errorMsg'] = $patientFile->getFirstErrors();
-            return $output;
-        }
-        return array(
-            'status' => EApiViewService::RESPONSE_OK,
-            'errorCode' => ErrorList::ERROR_NONE,
-            'errorMsg' => 'success',
-            'results' => '',
-        );
-    }
-
-    /**
-     * api 创建患者预约
-     * @param User $user
-     * @param $values
-     * @return mixed
-     */
-    public function apiCreatePatientBooking(User $user, $values) {
-        // validates input parameters.
-        if (isset($values['patient_id']) === false) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::BAD_REQUEST;
-            $output['errorMsg'] = '参数错误';
-            return $output;
-        }
-        $patientId = $values['patient_id'];
-        $userId = $user->getId();
-        // TODO: load $patient from db by $patientId.
-        $patient = PatientInfo::model()->getByIdAndCreatorId($patientId, $userId);
-        if (is_null($patient)) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::UNAUTHORIZED;
-            $output['errorMsg'] = '您还未创建此患者';
-            return $output;
-        }
-        $model = new PatientBooking();
-        $model->setAttributes($values);
-        $model->status = StatCode::BK_STATUS_NEW;
-        $model->creator_id = $userId;
-        $model->creator_name = $user->getUsername();
-        $model->patient_id = $patientId;
-        $patientMgr = new PatientManager();
-        $patientModel = $patientMgr->loadPatientInfoById($patientId);
-        if (isset($patientModel)) {
-            $patientName = $patientModel->getName();
-        }else{
-            $patientName = null;
-        }
-        $model->patient_name = $patientName;
-        $model->detail=$values['detail'];
-        if($values['doctor_id']){
-          $doctor = Doctor::model()->getById($values['doctor_id']);
-            if(is_null($doctor)){
-                $output['status'] = EApiViewService::RESPONSE_NO;
-                $output['errorCode'] = ErrorList::UNAUTHORIZED;
-                $output['errorMsg'] = '未找到该医生';
-                return $output;
-            }else{
-                $expected_doctor=$doctor->name."&nbsp;".$doctor->hospital_name."&nbsp;".$doctor->hp_dept_name;
-            }
-        }elseif($values['expected_doctor']){
-            if($values['expected_doctor']){
-                $expected_doctor=$values['expected_doctor'];
-            }else{
-                $output['status'] = EApiViewService::RESPONSE_NO;
-                $output['errorCode'] = ErrorList::UNAUTHORIZED;
-                $output['errorMsg'] = '未找到该医生';
-                return $output;
-            }
-        }
-        else{
-            $expected_doctor="";
-        }
-        $model->expected_doctor=$expected_doctor;
-        $model->doctor_id="";
-        //print_r($model);exit;
-        if ($model->save()) {
-            $apiRequest = new ApiRequestUrl();
-            $remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $model->id;
-            //$remote_url = 'http://192.168.1.216/admin/api/adminbooking'. '?type=' . StatCode::TRANS_TYPE_PB . '&id=119';
-            $ret = $this->send_get($remote_url);
-            if(isset($ret)){
-                if ($ret['status'] == 'no') {
-                    $output['status'] = 'no';
-                    $output['errorCode'] = 400;
-                    $output['errorMsg'] = $model->getFirstErrors();
-                    return $output;
-                }else{
-                    //发送提示短信
-                    $this->sendSmsToCreator($user, $model);
-                    $output['status'] = 'ok';
-                    $output['errorCode'] = ErrorList::ERROR_NONE;
-                    $output['errorMsg'] = 'success';
-                    $output['results'] = array(
-                        'bookingId' => $model->getId(),
-                        'refNo'=>$ret['salesOrderRefNo'],
-                        'actionUrl'=>Yii::app()->createAbsoluteUrl('/apimd/orderview/'.$model->getId()),
-    //                    'actionUrl' => Yii::app()->createAbsoluteUrl('/api2/bookingfile'),
-                    );
-                }
-             }else{
-                 $output['status'] = EApiViewService::RESPONSE_NO;
-                 $output['errorCode'] = ErrorList::UNAUTHORIZED;
-                 $output['errorMsg'] = '返回数据为空';
-             }
-            //自动生成一张adminbooking
-//            $bookingMgr = new BookingManager();
-//            $adminBooking = $bookingMgr->createAdminBooking($model);
-//            if ($adminBooking->hasErrors()) {
-//                $model->addErrors($adminBooking->getErrors());
-//            }
-//
-//            $taskMgr = new TaskManager();
-//            $task = $taskMgr->createTaskBooking($adminBooking);
-//            if ($task == false) {
-//                $model->addErrors('task data error.');
-//            }
-//
-//            //预约单保存成功  生成一张支付单
-//            $orderMgr = new OrderManager();
-//            $salesOrder = $orderMgr->createSalesOrder($adminBooking);
-//            if ($salesOrder->save()) {
-//                //发送提示短信
-//                $this->sendSmsToCreator($user, $model);
-//            }
-//
-//            $output['status'] = EApiViewService::RESPONSE_OK;
-//            $output['errorCode'] = ErrorList::ERROR_NONE;
-//            $output['errorMsg'] = 'success';
-//            $output['results'] = array('bookingId'=>$model->getId(), 'refNo'=>$salesOrder->getRefNo());
-        } else {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::UNAUTHORIZED;
-            $output['errorMsg'] = $model->getErrors();
-        }
-        return $output;
-    }
-
-    public function sendSmsToCreator(User $user, $patientBooking) {
+    public function sendSmsToCreator($patientBooking, $user) {
         $mobile = $user->getUsername();
         $smsMgr = new SmsManager();
         $data = new stdClass();
         $data->refno = $patientBooking->getRefNo();
         $doctor = $patientBooking->getDoctor();
-        $data->expertBooked = isset($doctor) ? $doctor->name : '';
+        if (isset($doctor)) {
+            $name = $doctor->name;
+        } else {
+            $name = '';
+        }
+        $data->expertBooked = $name;
         //发送提示的信息
         $smsMgr->sendSmsBookingSubmit($mobile, $data);
     }
 
-    function send_get($url) {
-        $result = file_get_contents($url, false);
-        return json_decode($result, true);
+    /*     * ************************************************app专用方法***************************************** */
+
+    public function apiSavePatient($values, $userId) {
+        $output = array('status' => 'no', 'errorCode' => ErrorList::NOT_FOUND);
+        $form = new PatientInfoForm();
+        $form->setAttributes($values, true);
+        $form->creator_id = $userId;
+        $form->country_id = 1;  // default country is China.
+        if ($form->validate()) {
+            $patient = $this->loadPatientInfoById($form->id);
+            if (isset($patient) === false) {
+                $patient = new PatientInfo();
+            }
+            $patient->setAttributes($form->attributes, true);
+            $patient->setAge();
+            $regionState = RegionState::model()->getById($patient->state_id);
+            $patient->state_name = $regionState->getName();
+            $regionCity = RegionCity::model()->getById($patient->city_id);
+            $patient->city_name = $regionCity->getName();
+            if ($patient->save()) {
+                $output['status'] = 'ok';
+                $output['errorMsg'] = 'success';
+                $output['results'] = array('id' => $patient->getId());
+            } else {
+                $output['errorMsg'] = $patient->getFirstErrors();
+            }
+        } else {
+            $output['errorMsg'] = $form->getFirstErrors();
+        }
+        return $output;
+    }
+
+    public function apiSavePatientBooking($values, $user) {
+        $output = array('status' => 'no', 'errorCode' => ErrorList::NOT_FOUND, 'errorMsg' => '网络异常,请稍后尝试!');
+        $bookingDB = null;
+        $patientId = null;
+        $patientName = null;
+        $patientMgr = new PatientManager();
+        if (isset($values['patient_id'])) {
+            $patientId = $values['patient_id'];
+            $model = $patientMgr->loadPatientInfoById($patientId);
+            if (isset($model)) {
+                $patientName = $model->getName();
+            } else {
+                $output['errorMsg'] = '您还未创建此患者';
+                return $output;
+            }
+        }
+        $userId = $user->getId();
+        $createName = $user->getUsername();
+        $userDoctorProfile = $user->getUserDoctorProfile();
+        if (isset($userDoctorProfile)) {
+            if (strIsEmpty($userDoctorProfile->getName()) === false) {
+                $createName = $userDoctorProfile->getName();
+            }
+        }
+        $form = new PatientBookingForm();
+        $form->setAttributes($values, true);
+        $form->setPatientId($patientId);
+        $form->patient_name = $patientName;
+        $form->setCreatorId($userId);
+        $form->creator_name = $createName;
+        $form->setStatusNew();
+        try {
+            if ($form->validate() === false) {
+                $output['errorMsg'] = $form->getFirstErrors();
+                throw new CException('error saving data.');
+            }
+            $patientBooking = new PatientBooking();
+            $patientBooking->setAttributes($form->attributes, true);
+            if ($patientBooking->save() === false) {
+                $output['errorMsg'] = $patientBooking->getFirstErrors();
+                throw new CException('error saving data.');
+            }
+            $bookingDB = $patientBooking;
+            $apiRequest = new ApiRequestUrl();
+            //$remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . '?type = ' . StatCode::TRANS_TYPE_PB . '&id = ' . $patientBooking->id;
+            $remote_url = 'http://192.168.1.216/admin/api/adminbooking?type=' . StatCode::TRANS_TYPE_PB . '&id=' . $patientBooking->id;
+            $data = $apiRequest->send_get($remote_url);
+            if ($data['status'] == "ok") {
+                $output['status'] = EApiViewService::RESPONSE_OK;
+                $output['errorCode'] = ErrorList::ERROR_NONE;
+                $output['errorMsg'] = 'success';
+                $output['results'] = array(
+                    'refNo' => $data['salesOrderRefNo'],
+                    'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/orderinfo/' . $patientBooking->getId()),
+                );
+                //发送提示短信
+                $this->sendSmsToCreator($patientBooking, $user);
+            } else {
+                throw new CException('error saving data.');
+            }
+        } catch (CException $cex) {
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = '网络异常,请稍后尝试!';
+            if (isset($bookingDB)) {
+                $bookingDB->delete(true);
+            }
+        }
+        return $output;
+    }
+
+    public function apiSaveDoctorOpinion($values) {
+        $output = array('status' => 'no', 'errorCode' => ErrorList::NOT_FOUND, 'errorMsg' => '网络异常,请稍后尝试!');
+        $userId = $values['userId'];
+        $id = $values['id'];
+        $type = $values['type'];
+        $accept = $values['accept'];
+        $opinion = $values['opinion'];
+        if ($type == StatCode::TRANS_TYPE_PB) {
+            $booking = PatientBooking::model()->getByAttributes(array('doctor_id' => $userId, 'id' => $id));
+        } else {
+            $booking = Booking::model()->getByIdAndDoctorUserId($id, $userId);
+        }
+        if (isset($booking)) {
+            $booking->setDoctorAccept($accept);
+            $booking->setDoctorOpinion($opinion);
+            if ($booking->update(array('doctor_accept', 'doctor_opinion'))) {
+                //医生评价成功 调用crm接口修改admin_booking的接口
+                $urlMgr = new ApiRequestUrl();
+                //$url = $urlMgr->getUrlDoctorAccept() . "?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+                $url = "http://192.168.1.216/admin/api/doctoraccept?id={$id}&type={$type}&accept={$accept}&opinion={$opinion}";
+                $urlMgr->send_get($url);
+                $output['status'] = 'ok';
+                $output['errorCode'] = ErrorList::ERROR_NONE;
+                $output['errorMsg'] = 'success';
+            } else {
+                $output['errorMsg'] = $booking->getFirstErrors();
+            }
+        } else {
+            $output['errorMsg'] = '暂未填写预约信息!';
+        }
+        return $output;
     }
 
 }

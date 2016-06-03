@@ -127,232 +127,8 @@ class UserManager {
         return $output;
     }
 
-    public function loadUserByUsername($username) {
-        return User::model()->getByUsername($username);
-    }
-
-    //根据医生id查询其填写的会诊信息
-    public function loadUserDoctorHuizhenByUserId($userId, $with = null) {
-        return UserDoctorHuizhen::model()->getByAttributes(array('user_id' => $userId), $with);
-    }
-
-    //根据id查询会诊信息
-    public function loadUserDoctorHuizhenById($id) {
-        return UserDoctorHuizhen::model()->getById($id);
-    }
-
-    //根据医生id查询其填写的转诊信息
-    public function loadUserDoctorZhuanzhenByUserId($userId, $with = null) {
-        return UserDoctorZhuanzhen::model()->getByAttributes(array('user_id' => $userId), $with);
-    }
-
-    //根据id查询转诊信息
-    public function loadUserDoctorZhuanzhenById($id) {
-        return UserDoctorZhuanzhen::model()->getById($id);
-    }
-
-    //保存或者修改医生会诊信息
-    public function createOrUpdateDoctorHuizhen($values) {
-        $output = array('status' => 'no');
-        $userId = $values['user_id'];
-        $form = new DoctorHuizhenForm();
-        $form->setAttributes($values, true);
-        if ($form->validate() === false) {
-            $output['status'] = 'no';
-            $output['errors'] = $form->getErrors();
-            return $output;
-        }
-        $doctorHz = new UserDoctorHuizhen();
-        $model = $this->loadUserDoctorHuizhenByUserId($userId);
-        if (isset($model)) {
-            $doctorHz = $model;
-        }
-        $attributes = $form->getSafeAttributes();
-        $doctorHz->setAttributes($attributes, true);
-        if ($doctorHz->save() === false) {
-            $output['status'] = 'no';
-            $output['errors'] = $doctorHz->getErrors();
-        } else {
-            $output['status'] = 'ok';
-            $output['hzId'] = $doctorHz->getId();
-        }
-        return $output;
-    }
-
-    public function createOrUpdateDoctorZhuanzhen($values) {
-        $output = array('status' => 'no');
-        $userId = $values['user_id'];
-        $form = new DoctorZhuanzhenForm();
-        $form->setAttributes($values, true);
-        if ($form->validate() === false) {
-            $output['status'] = 'no';
-            $output['errors'] = $form->getErrors();
-            return $output;
-        }
-        $doctorZz = new UserDoctorZhuanzhen();
-        $model = $this->loadUserDoctorZhuanzhenByUserId($userId);
-        if (isset($model)) {
-            $doctorZz = $model;
-        }
-        $attributes = $form->getSafeAttributes();
-        $doctorZz->setAttributes($attributes, true);
-        if ($doctorZz->save() === false) {
-            $output['status'] = 'no';
-            $output['errors'] = $doctorZz->getErrors();
-        } else {
-            $output['status'] = 'ok';
-            $output['zzId'] = $doctorZz->getId();
-        }
-        return $output;
-    }
-
-    /*     * ****** Api 2.0 ******* */
-
-    /**
-     * 
-     * @param type $values = array('username'=>$username, 'password'=>$password, 'verify_code'=>$verify_code, 'userHostIp'=>$userHostIp);
-     * @return string
-     */
-    public function apiTokenUserRegister($values) {
-        $output = array('status' => 'no'); // default status is false.
-        // TODO: wrap the following method. first, validates the parameters in $values.        
-        if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
-            $output['errors']['error_code'] = ErrorList::BAND_REQUEST;
-            $output['errors']['error_msg'] = 'Wrong parameters.';
-            return $output;
-        }
-        // assign parameters.
-        $mobile = $values['username'];
-        $password = $values['password'];
-        $verifyCode = $values['verify_code'];
-        $userHostIp = isset($values['userHostIp']) ? $values['userHostIp'] : null;
-        $autoLogin = false;
-        if (isset($values['autoLogin']) && $values['autoLogin'] == 1) {
-            $autoLogin = true;
-        }
-
-        // Verifies AuthSmsVerify by using $mobile & $verifyCode.     手机验证码验证    
-        $authMgr = new AuthManager();
-        $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
-        if ($authSmsVerify->isValid() === false) {
-            $output['errors']['verify_code'] = $authSmsVerify->getError('code');
-            return $output;
-        }
-        // Check if username exists.
-        if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_PATIENT))) {
-            $output['status'] = 'no';
-            $output['errors']['username'] = '该手机号已被注册';
-            return $output;
-        }
-
-        // success.
-        // Creates a new User model.
-        $user = $this->doRegisterUser($mobile, $password);
-        if ($user->hasErrors()) {
-            // error, so return errors.
-            $output['errors'] = $user->getFirstErrors();
-            return $output;
-        } else if ($autoLogin) {
-            // auto login user and return token.            
-            $output = $authMgr->doTokenUserLoginByPassword($mobile, $password, $userHostIp);
-        } else {
-            $output['status'] = 'ok';
-        }
-        // deactive current smsverify.                
-        if (isset($authSmsVerify)) {
-            $authMgr->deActiveAuthSmsVerify($authSmsVerify);
-        }
-
-        return $output;
-    }
-
-    //医生注册
-    public function apiTokenDoctorRegister($values) {
-        $output = array('status' => 'no'); // default status is false.
-        // TODO: wrap the following method. first, validates the parameters in $values.        
-        if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::NOT_FOUND;
-            $output['errorMsg'] = 'Wrong parameters.';
-            return $output;
-        }
-        // assign parameters.
-        $mobile = $values['username'];
-        $password = $values['password'];
-        $verifyCode = $values['verify_code'];
-        $userHostIp = isset($values['userHostIp']) ? $values['userHostIp'] : null;
-        $autoLogin = false;
-        if (isset($values['autoLogin']) && $values['autoLogin'] == 1) {
-            $autoLogin = true;
-        }
-
-        // Verifies AuthSmsVerify by using $mobile & $verifyCode.     手机验证码验证    
-        $authMgr = new AuthManager();
-        $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
-        if ($authSmsVerify->isValid() === false) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::NOT_FOUND;
-            $output['errorMsg'] = $authSmsVerify->getError('code');
-            return $output;
-        }
-        // Check if username exists.
-        if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::NOT_FOUND;
-            $output['errorMsg'] = '该手机号已被注册';
-            return $output;
-        }
-
-        // success.
-        // Creates a new User model.
-        $user = $this->doRegisterDoctor($mobile, $password);
-        if ($user->hasErrors()) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::NOT_FOUND;
-            $output['errorMsg'] = $user->getFirstErrors();
-            return $output;
-        } else if ($autoLogin) {
-            $output['status'] = EApiViewService::RESPONSE_NO;
-            $output['errorCode'] = ErrorList::NOT_FOUND;
-            $output['errorMsg'] = $user->getFirstErrors();
-            // auto login user and return token.            
-            $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
-        } else {
-            $output['status'] = EApiViewService::RESPONSE_OK;
-            $output['errorCode'] = ErrorList::ERROR_NONE;
-            $output['errorMsg'] = 'success';
-            $output['results'] = [];
-        }
-        // deactive current smsverify.                
-        if (isset($authSmsVerify)) {
-            $authMgr->deActiveAuthSmsVerify($authSmsVerify);
-        }
-
-        return $output;
-    }
-
-    /**
-     * 
-     * @param type $username
-     * @param type $password
-     * @param type $terms
-     * @return User $model.
-     */
-    public function doRegisterUser($username, $password, $terms = 1, $activate = 1) {
-        // create new User model and save into db.
-        $model = new User();
-        $model->scenario = 'register';
-        $model->username = $username;
-        $model->role = StatCode::USER_ROLE_PATIENT;
-        $model->password_raw = $password;
-        $model->terms = $terms;
-        $model->createNewModel();
-        if ($activate) {
-            $model->setActivated();
-        }
-        $model->save();
-
-        return $model;
+    public function loadUserByUsername($username, $role = StatCode::USER_ROLE_DOCTOR) {
+        return User::model()->getByUsernameAndRole($username, $role);
     }
 
     /**
@@ -515,6 +291,146 @@ class UserManager {
         } else {
             return $model;
         }
+    }
+
+    /*     * *************************************************app使用方法********************************************************* */
+
+    //医生注册
+    public function apiTokenDoctorRegister($values) {
+        $output = array('status' => 'no'); // default status is false.
+        // TODO: wrap the following method. first, validates the parameters in $values.        
+        if (isset($values['username']) === false || isset($values['password']) === false || isset($values['verify_code']) === false) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = 'Wrong parameters.';
+            return $output;
+        }
+        // assign parameters.
+        $mobile = $values['username'];
+        $password = $values['password'];
+        $verifyCode = $values['verify_code'];
+        $userHostIp = isset($values['userHostIp']) ? $values['userHostIp'] : null;
+        $autoLogin = false;
+        if (isset($values['autoLogin']) && $values['autoLogin'] == 1) {
+            $autoLogin = true;
+        }
+
+        // Verifies AuthSmsVerify by using $mobile & $verifyCode.     手机验证码验证    
+        $authMgr = new AuthManager();
+        $authSmsVerify = $authMgr->verifyCodeForRegister($mobile, $verifyCode, $userHostIp);
+        if ($authSmsVerify->isValid() === false) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $authSmsVerify->getError('code');
+            return $output;
+        }
+        // Check if username exists.
+        if (User::model()->exists('username=:username AND role=:role', array(':username' => $mobile, ':role' => StatCode::USER_ROLE_DOCTOR))) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = '该手机号已被注册';
+            return $output;
+        }
+
+        // success.
+        // Creates a new User model.
+        $user = $this->doRegisterDoctor($mobile, $password);
+        if ($user->hasErrors()) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $user->getFirstErrors();
+            return $output;
+        } else if ($autoLogin) {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::NOT_FOUND;
+            $output['errorMsg'] = $user->getFirstErrors();
+            // auto login user and return token.            
+            $output = $authMgr->doTokenDoctorLoginByPassword($mobile, $password, $userHostIp);
+        } else {
+            $output['status'] = EApiViewService::RESPONSE_OK;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = 'success';
+            $output['results'] = [];
+        }
+        // deactive current smsverify.                
+        if (isset($authSmsVerify)) {
+            $authMgr->deActiveAuthSmsVerify($authSmsVerify);
+        }
+
+        return $output;
+    }
+
+    public function apiForgetPassword($values) {
+        $output = array('status' => 'no', 'errorCode' => ErrorList::NOT_FOUND);
+        $form = new ForgetPasswordForm();
+        $form->attributes = $values;
+        if ($form->validate()) {
+            $user = $this->loadUserByUsername($form->username, StatCode::USER_ROLE_DOCTOR);
+            if (isset($user)) {
+                $success = $this->doResetPassword($user, null, $form->password_new);
+                if ($success) {
+                    $output['status'] = 'ok';
+                    $output['errorCode'] = ErrorList::ERROR_NONE;
+                    $output['errorsMsg'] = 'success';
+                } else {
+                    $output['errorsMsg'] = '密码修改失败';
+                }
+            } else {
+                $output['errorMsg'] = '用户不存在';
+            }
+        } else {
+            $output['errorMsg'] = '验证码错误';
+        }
+        return $output;
+    }
+
+    /**
+     * api 创建或修改(id设值)医生个人信息
+     * @param User $user
+     * @param $values
+     * @param null $id
+     * @return mixed
+     */
+    public function apiCreateProfile(User $user, $values) {
+        $userId = $user->getId();
+        $model = UserDoctorProfile::model()->getByUserId($userId);
+        $isupdate = true;
+        if (is_null($model)) {
+            $isupdate = false;
+            $model = new UserDoctorProfile();
+        }
+        $model->setAttributes($values);
+        // user_id.
+        $model->user_id = $userId;
+        $model->mobile = $user->getUsername();
+        //给省会名 城市名赋值
+        $regionState = RegionState::model()->getById($model->state_id);
+        $model->state_name = $regionState->getName();
+        $regionCity = RegionCity::model()->getById($model->city_id);
+        $model->city_name = $regionCity->getName();
+        if ($model->save()) {
+            //信息修改成功 调用远程接口创建task
+            if ($isupdate) {
+                $type = StatCode::TASK_DOCTOR_CERT;
+                $apiRequest = new ApiRequestUrl();
+                //$remote_url = $apiRequest->getUrlAdminSalesBookingCreate() . "?userid={$userId}&type={$type}";
+                //本地测试请用 
+                $remote_url = "http://localhost/admin/api/taskuserdoctor?userid={$userId}&type={$type}";
+                $apiRequest->send_get($remote_url);
+            }
+            $output['status'] = EApiViewService::RESPONSE_OK;
+            $output['errorCode'] = ErrorList::ERROR_NONE;
+            $output['errorMsg'] = 'success';
+            $output['results'] = array(
+                'id' => $model->getId(),
+                'actionUrl' => Yii::app()->createAbsoluteUrl('/apimd/doctorinfo'),
+            );
+        } else {
+            $output['status'] = EApiViewService::RESPONSE_NO;
+            $output['errorCode'] = ErrorList::BAD_REQUEST;
+            $output['errorMsg'] = $model->getFirstErrors();
+        }
+        return $output;
     }
 
 }

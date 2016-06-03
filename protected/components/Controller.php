@@ -158,71 +158,89 @@ abstract class Controller extends CController {
         $request = Yii::app()->request;
         return $request->hostInfo . $request->url;
     }
-    
+
+    public function domainWhiteList() {
+        return array();
+    }
+
+    public function getHttpOrigin() {
+        return isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    }
+
+    public function setHeaderSafeDomain($whiteList, $domain = null) {
+        if (is_null($domain)) {
+            $domain = $this->getHttpOrigin();
+        }
+        $domain = strtolower($domain);
+        if (arrayNotEmpty($whiteList)) {
+            if (in_array($domain, $whiteList)) {
+                header('Access-Control-Allow-Origin:' . $domain);
+            }
+        }
+    }
+
+    /**
+     * 模拟get进行url请求
+     * @param string $url
+     */
+    function send_get($url) {
+        $result = file_get_contents($url, false);
+        return json_decode($result, true);
+    }
+
     /**
      * http请求参数过滤
      * @param unknown $attrs
      * @return multitype:Ambigous <>
      */
-    public function filterRequestParams($attrs=array()){
+    public function filterRequestParams($attrs = array()) {
         $requestType = strtolower($_SERVER['REQUEST_METHOD']);
-        $inputs=array();
-        switch($requestType){
+        $inputs = array();
+        switch ($requestType) {
             case 'get':
                 $inputs = $_GET;
                 break;
             case 'post':
-                $inputs = json_decode($this->getPostData(),true);
+                $inputs = json_decode($this->getPostData(), true);
                 break;
             case 'put':
-                $inputs = json_decode($this->getPostData(),true);
+                $inputs = json_decode($this->getPostData(), true);
                 break;
         }
-        $i=array();
-        if(arrayNotEmpty($inputs)){
-            foreach($attrs as $attr){
-                if(isset($inputs[$attr])){
-                    if($requestType=='get'){
-                        $inputs[$attr]=urldecode($inputs[$attr]);
+        $i = array();
+        if (arrayNotEmpty($inputs)) {
+            foreach ($attrs as $attr) {
+                if (isset($inputs[$attr])) {
+                    if ($requestType == 'get') {
+                        $inputs[$attr] = urldecode($inputs[$attr]);
                     }
-                    $i[$attr]=stripslashes($inputs[$attr]);
+                    $i[$attr] = stripslashes($inputs[$attr]);
                 }
             }
         }
         return $i;
     }
-    
-    /**
-     * 加密输出
-     */
-    public function encryptOutput($output){
-        $client='app';
-        $rasConfig = CoreRasConfig::model()->getByClient($client);
-        $outputJson=CJSON::encode($output);
-        $publicKey = $rasConfig->public_key;
-        $privateKey=$rasConfig->private_key;
-        $rsa = new RsaEncrypter($publicKey, $privateKey);
-        $sign = $rsa->sign($outputJson);
-        $verify = $rsa->verify($outputJson, $sign);
-        $encrypt = $rsa->encrypt($outputJson);
-        return $encrypt;
-    }
-    
+
     /**
      * 请求参数解密
      */
-    public function decryptInput($json){
-        $x=CJSON::decode($json,true);
-        $client='app';
-        $rasConfig = CoreRasConfig::model()->getByClient($client);
-        $publicKey = $rasConfig->public_key;
-        $privateKey=$rasConfig->private_key;
-        $rsa = new RsaEncrypter($publicKey, $privateKey);
-        $decrypt = $rsa->newDecrypt($x);
-        //print_r($decrypt);
-        //echo base64_decode($decrypt);
-        //print_r(CJSON::decode(base64_decode($decrypt),true));
-        return CJSON::decode(base64_decode($decrypt),true);
+    public function decryptInput($disfor = true) {
+        $param = $_POST['param'];
+        $inputs = CJSON::decode($param, true);
+        $rasConfig = CoreRasConfig::model()->getByClient('app');
+        $encrypter = new RsaEncrypter($rasConfig->public_key, $rasConfig->private_key);
+        $str = $encrypter->newDecrypt($inputs);
+        $str = base64_decode($str);
+        $str = CJSON::decode($str, true);
+        if ($disfor) {
+            foreach ($str as $k => $values) {
+                foreach ($values as $key => $value) {
+                    $values[$key] = urldecode($value);
+                }
+                $str[$k] = $values;
+            }
+        }
+        return $str;
     }
 
 }

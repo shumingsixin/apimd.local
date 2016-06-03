@@ -10,7 +10,6 @@ class DoctorZhuanzhenForm extends EFormModel {
     public $user_id;
     public $is_join;
     public $fee;
-    //public $week_days;
     public $preferred_patient;
     public $prep_days;
 

@@ -15,10 +15,10 @@ class UserDoctorZhuanzhen extends EFileModel {
 
     const IS_JOIN = 1;  //参加
     const ISNOT_JOIN = 0;    //不参加
-    const PTEP_DAYS_ONE = '3dh3ds'; //三天内入院，三天内安排手术
-    const PTEP_DAYS_TWO = '3dh1ws'; //三天内入院，一周内安排手术
-    const PTEP_DAYS_THREE = '1wh1ws'; //一周内入院，一周内安排手术
-    const PTEP_DAYS_FOUR = '2wh1ws'; //两周内入院，一周内安排手术
+    const PTEP_DAYS_ONE = '3d'; //三天内安排床位
+    const PTEP_DAYS_TWO = '1w'; //一周内安排床位
+    const PTEP_DAYS_THREE = '2w'; //两周内安排床位
+    const PTEP_DAYS_FOUR = '3w'; //三周内安排床位
 
     /**
      * @return string the associated database table name
@@ -36,11 +36,10 @@ class UserDoctorZhuanzhen extends EFileModel {
         // will receive user inputs.
         return array(
             array('user_id, is_join, fee', 'numerical', 'integerOnly' => true),
-            array('week_days', 'length', 'max' => 20),
             array('prep_days, preferred_patient', 'length', 'max' => 500),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
-            array('id, user_id, is_join, fee, week_days, prep_days', 'safe', 'on' => 'search'),
+            array('id, user_id, is_join, fee, prep_days', 'safe', 'on' => 'search'),
         );
     }
 
@@ -64,7 +63,6 @@ class UserDoctorZhuanzhen extends EFileModel {
             'user_id' => 'User',
             'is_join' => 'Is Join',
             'fee' => 'Fee',
-            'week_days' => 'Week Days',
             'prep_days' => 'Prep Days',
         );
     }
@@ -90,7 +88,6 @@ class UserDoctorZhuanzhen extends EFileModel {
         $criteria->compare('user_id', $this->user_id);
         $criteria->compare('is_join', $this->is_join);
         $criteria->compare('fee', $this->fee);
-        $criteria->compare('week_days', $this->week_days, true);
         $criteria->compare('prep_days', $this->prep_days, true);
 
         return new CActiveDataProvider($this, array(
@@ -113,10 +110,10 @@ class UserDoctorZhuanzhen extends EFileModel {
     }
 
     public function getOptionsPrepDays() {
-        return array(self::PTEP_DAYS_ONE => '三天内入院，三天内安排手术',
-            self::PTEP_DAYS_TWO => '三天内入院，一周内安排手术',
-            self::PTEP_DAYS_THREE => '一周内入院，一周内安排手术',
-            self::PTEP_DAYS_FOUR => '两周内入院，一周内安排手术'
+        return array(self::PTEP_DAYS_ONE => '三天内',
+            self::PTEP_DAYS_TWO => '一周内',
+            self::PTEP_DAYS_THREE => '两周内',
+            self::PTEP_DAYS_FOUR => '三周内'
         );
     }
 
@@ -130,18 +127,6 @@ class UserDoctorZhuanzhen extends EFileModel {
             }
         }
         return $this->is_join;
-    }
-
-    public function getWeekDays($v = true) {
-        if ($v) {
-            if (strIsEmpty($this->week_days, true) === false) {
-                return explode(',', $this->week_days);
-            } else {
-                return array();
-            }
-        } else {
-            return $this->week_days;
-        }
     }
 
     public function getPrepDays($v = true) {

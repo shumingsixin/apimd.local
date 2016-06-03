@@ -11,16 +11,16 @@
  *
  * @author shuming
  */
-class apiViewDoctorZz extends EApiViewService {
+class ApiViewDoctorZz extends EApiViewService {
 
     private $userId;
     private $userDoctorZz;
-    private $userMgr;
+    private $doctorMgr;
 
     public function __construct($userId) {
         parent::__construct();
         $this->userId = $userId;
-        $this->userMgr = new UserManager();
+        $this->doctorMgr = new MDDoctorManager();
         $this->userDoctorZz = null;
     }
 
@@ -38,7 +38,7 @@ class apiViewDoctorZz extends EApiViewService {
     }
 
     private function loadDoctorZz() {
-        $model = $this->userMgr->loadUserDoctorZhuanzhenByUserId($this->userId);
+        $model = $this->doctorMgr->loadUserDoctorZhuanzhenByUserId($this->userId);
         if (isset($model)) {
             $this->setUserDoctorZz($model);
         }
@@ -48,10 +48,8 @@ class apiViewDoctorZz extends EApiViewService {
     private function setUserDoctorZz(UserDoctorZhuanzhen $model) {
         $data = new stdClass();
         $data->id = $model->getId();
-        $data->user_id = $model->user_id;
         $data->is_join = $model->getIsJoin(false);
         $data->fee = $model->fee;
-        //$data->week_days = $model->getWeekDays();
         $data->preferredPatient = $model->preferred_patient;
         $data->prep_days = $model->getPrepDays();
         $this->userDoctorZz = $data;

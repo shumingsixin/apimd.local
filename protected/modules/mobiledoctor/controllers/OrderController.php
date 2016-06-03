@@ -1,18 +1,34 @@
 <?php
 
 class OrderController extends MobiledoctorController {
-    /*
-      public function actionView($refNo) {
-      $apiSvc = new ApiViewSalesOrder($refNo);
-      $output = $apiSvc->loadApiViewData();
-      $returnUrl = $this->getReturnUrl("order/view");
-      $this->render('view', array(
-      'data' => $output,
-      'returnUrl' => $returnUrl,
-      ));
-      }
-     * 
+
+    public function filters() {
+        return array(
+            'accessControl', // perform access control for CRUD operations
+            'postOnly + delete', // we only allow deletion via POST requestf           
+        );
+    }
+
+    /**
+     * Specifies the access control rules.
+     * This method is used by the 'accessControl' filter.
+     * @return array access control rules
      */
+    public function accessRules() {
+        return array(
+            array('allow', // allow all users to perform 'index' and 'view' actions
+                'actions' => array('view', 'loadOrderPay', 'payResult'),
+                'users' => array('*'),
+            ),
+            array('allow', // allow authenticated user to perform 'create' and 'update' actions
+                'actions' => array('orderView', 'payOrders'),
+                'users' => array('@'),
+            ),
+            array('deny', // deny all users
+                'users' => array('*'),
+            ),
+        );
+    }
 
     /**
      * In order to compromize wx-pub-pay(微信支付), if client browser is weixin webview, redirect to domain/weixin/pay.php.
@@ -82,6 +98,41 @@ class OrderController extends MobiledoctorController {
             $output->error = 'invalid refNo';
         }
         $this->renderJsonOutput($output);
+    }
+
+    //支付单详情
+    public function actionOrderView($bookingid) {
+        $apiSvc = new ApiViewBookOrder($bookingid);
+        $output = $apiSvc->loadApiViewData();
+        $this->render('orderView', array(
+            'data' => $output
+        ));
+    }
+
+    //分批支付订单
+    public function actionPayOrders($bookingId, $orderType) {
+        $apiSvc = new ApiViewPayOrders($bookingId, $orderType);
+        $output = $apiSvc->loadApiViewData();
+        $this->render('payOrders', array(
+            'data' => $output
+        ));
+    }
+
+    public function actionPayResult($paymentcode) {
+        $payment = SalesPayment::model()->getByAttributes(array('uid' => $paymentcode), array('paymentOrder'));
+        $order = $payment->paymentOrder;
+        if ($order === NULL) {
+            throw new CHttpException(404, 'The requested page does not exist.');
+        }
+        //支付成功 生成task提醒
+        $apiurl = new ApiRequestUrl();
+        $url = $apiurl->getUrlPay();
+        $this->send_get($url);
+        $this->show_header = true;
+        $this->show_footer = false;
+        $this->show_baidushangqiao = false;
+
+        $this->render('payResult', array('order' => $order));
     }
 
 }

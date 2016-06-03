@@ -43,7 +43,6 @@ class PatientBooking extends EActiveRecord {
     /**
      * @return string the associated database table name
      */
-
     public function tableName() {
         return 'patient_booking';
     }
@@ -56,14 +55,14 @@ class PatientBooking extends EActiveRecord {
         // will receive user inputs.
         return array(
             array('patient_id, creator_id, status, travel_type', 'required'),
-            array('patient_id, creator_id, doctor_id, status, travel_type', 'numerical', 'integerOnly' => true),
+            array('patient_id, creator_id, doctor_id, status, travel_type, operation_finished', 'numerical', 'integerOnly' => true),
             array('ref_no', 'length', 'is' => 14),
             array('user_agent, doctor_name, patient_name, creator_name', 'length', 'max' => 20),
             array('expected_doctor', 'length', 'max' => 200),
-            //array('expected_hospital', 'length', 'max' => 200),
+            array('expected_dept, expected_hospital', 'length', 'max' => 200),
             array('detail', 'length', 'max' => 1000),
             array('remark, cs_explain, doctor_opinion', 'length', 'max' => 500),
-            array('expected_doctor, appt_date, date_confirm, date_created, date_updated, date_deleted, date_start, date_end', 'safe'),
+            array('expected_dept, expected_hospital, expected_doctor, appt_date, date_confirm, date_created, date_updated, date_deleted, date_start, date_end', 'safe'),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
             array('id, ref_no, patient_id, patient_name, doctor_id, doctor_name, creator_id, creator_name, status, travel_type, date_start, date_end, detail, appt_date, date_confirm, remark, date_created, date_updated, date_deleted', 'safe', 'on' => 'search'),
@@ -101,7 +100,6 @@ class PatientBooking extends EActiveRecord {
             'travel_type' => '出行方式',
             'date_start' => '开始日期',
             'date_end' => '结束日期',
-            'expected_doctor' => '期望专家',
             'detail' => '细节',
             'is_deposit_paid' => '是否支付定金',
             'appt_date' => '最终预约日期',
@@ -142,7 +140,6 @@ class PatientBooking extends EActiveRecord {
         $criteria->compare('travel_type', $this->travel_type);
         $criteria->compare('date_start', $this->date_start, true);
         $criteria->compare('date_end', $this->date_end, true);
-        $criteria->compare('expected_doctor', $this->expected_doctor, true);
         $criteria->compare('detail', $this->detail, true);
         $criteria->compare('appt_date', $this->appt_date, true);
         $criteria->compare('date_confirm', $this->date_confirm, true);
@@ -192,14 +189,8 @@ class PatientBooking extends EActiveRecord {
     }
 
     //查询预约该医生的患者列表
-    public function getAllByDoctorId($doctorId,$status, $attributes = '*', $with = null, $options = null) {
-        if($status==0){
-           $array=array('t.doctor_id' => $doctorId);            
-        }
-        else{
-           $array=array('t.doctor_id' => $doctorId,'t.status' => $status);
-        }
-        return $this->getAllByAttributes($array, $with, $options);
+    public function getAllByDoctorId($doctorId, $attributes = '*', $with = null, $options = null) {
+        return $this->getAllByAttributes(array('t.doctor_id' => $doctorId), $with, $options);
     }
 
     //查询预约该医生的患者详细信息
@@ -256,7 +247,6 @@ class PatientBooking extends EActiveRecord {
     public function getDoctorName() {
         return $this->doctor_name;
     }
-    
 
     public function getOptionsBkStatus() {
         return array(
@@ -292,7 +282,6 @@ class PatientBooking extends EActiveRecord {
             self::BK_STATUS_SERVICE_UNPAID => '当前状态:待支付平台咨询费',
             self::BK_STATUS_SERVICE_PAIDED => '当前状态:待上传出院小结',
             self::BK_STATUS_SURGER_DONE => '感谢你协助完成了该例手术!',
-            self::BK_STATUS_CANCELLED => '当前状态：预约已取消',
         );
     }
 
@@ -415,6 +404,5 @@ class PatientBooking extends EActiveRecord {
             }
         }
     }
-    
-    
+
 }
